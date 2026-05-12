@@ -95,3 +95,14 @@ func (s *PatientService) LoginPatient(ctx context.Context, req domain.LoginDto) 
 		AccessToken: token,
 	}, nil
 }
+
+
+func (s *PatientService) GetMe(ctx context.Context, patientID string) (domain.Patient, error){
+	patient, err := s.repo.FindByID(ctx, patientID)
+
+	if err != nil {
+		return domain.Patient{}, fmt.Errorf("patient service get me: %w", err)
+	}
+
+	return patient, nil
+}

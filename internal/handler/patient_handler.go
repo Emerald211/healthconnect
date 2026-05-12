@@ -40,7 +40,6 @@ func (h *PatientHandler) Register(c *gin.Context) {
 	response.Success(c, http.StatusCreated, newPatient)
 }
 
-
 func (h *PatientHandler) Login(c *gin.Context) {
 	var req domain.LoginDto
 
@@ -56,6 +55,28 @@ func (h *PatientHandler) Login(c *gin.Context) {
 
 	patient, err := h.service.LoginPatient(c.Request.Context(), req)
 
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, patient)
+}
+
+func (h *PatientHandler) GetMe(c *gin.Context) {
+	patientId, exists := c.Get("patient_id")
+
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"success": false,
+			"error":   "unauthorized",
+			"message": "not authenticated",
+		})
+
+		return
+	}
+
+	patient, err := h.service.GetMe(c.Request.Context(), patientId.(string))
 	if err != nil {
 		response.Error(c, err)
 		return

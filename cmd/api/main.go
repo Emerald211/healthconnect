@@ -13,6 +13,7 @@ import (
 	"github.com/Emerald211/healthconnect/internal/config"
 	"github.com/Emerald211/healthconnect/internal/db"
 	"github.com/Emerald211/healthconnect/internal/handler"
+	"github.com/Emerald211/healthconnect/internal/middleware"
 	"github.com/Emerald211/healthconnect/internal/repository"
 	"github.com/Emerald211/healthconnect/internal/service"
 	"github.com/gin-gonic/gin"
@@ -83,7 +84,13 @@ func main() {
 			auth.POST("/login", patientHandler.Login)
 		}
 
-	
+		patients := v1.Group("/patients")
+		patients.Use(middleware.AuthMiddleware(cfg))
+
+		{
+			patients.GET("/me", patientHandler.GetMe)
+		}
+
 	}
 
 	server := &http.Server{
@@ -124,6 +131,3 @@ func main() {
 	fmt.Println("Server stopped cleanly")
 
 }
-
-
-
