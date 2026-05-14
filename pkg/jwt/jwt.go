@@ -14,11 +14,11 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func GenerateToken(patientID, email, secret string, expiryHours int) (string, error) {
+func GenerateToken(patientID, email, role, secret string, expiryHours int) (string, error) {
 	claims := Claims{
 		PatientID: patientID,
 		Email:     email,
-		Role:      "patient",
+		Role:      role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(expiryHours) * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

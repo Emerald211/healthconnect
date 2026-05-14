@@ -60,10 +60,10 @@ func (s *PatientService) RegisterPatient(ctx context.Context, req domain.Registe
 		return domain.AuthResponse{}, fmt.Errorf("creating patient: %w", err)
 	}
 
-	token, err := jwt.GenerateToken(newUser.ID, newUser.Email, s.cfg.JWTSecret, s.cfg.JWTExpiryHours)
+	token, err := jwt.GenerateToken(newUser.ID, newUser.Email, "patient", s.cfg.JWTSecret, s.cfg.JWTExpiryHours)
 	if err != nil {
 		return domain.AuthResponse{}, fmt.Errorf("generating token: %w", err)
-		}
+	}
 
 	return domain.AuthResponse{
 		Patient:     newUser,
@@ -71,7 +71,6 @@ func (s *PatientService) RegisterPatient(ctx context.Context, req domain.Registe
 	}, nil
 
 }
-
 
 func (s *PatientService) LoginPatient(ctx context.Context, req domain.LoginDto) (domain.AuthResponse, error) {
 
@@ -85,10 +84,10 @@ func (s *PatientService) LoginPatient(ctx context.Context, req domain.LoginDto) 
 		return domain.AuthResponse{}, domain.ErrInvalidPassword
 	}
 
-	token, err := jwt.GenerateToken(patient.ID, patient.Email, s.cfg.JWTSecret, s.cfg.JWTExpiryHours)
-		if err != nil {
-			return domain.AuthResponse{}, fmt.Errorf("generating token: %w", err)
-		}
+	token, err := jwt.GenerateToken(patient.ID, patient.Email, "patient", s.cfg.JWTSecret, s.cfg.JWTExpiryHours)
+	if err != nil {
+		return domain.AuthResponse{}, fmt.Errorf("generating token: %w", err)
+	}
 
 	return domain.AuthResponse{
 		Patient:     patient,
@@ -96,8 +95,7 @@ func (s *PatientService) LoginPatient(ctx context.Context, req domain.LoginDto) 
 	}, nil
 }
 
-
-func (s *PatientService) GetMe(ctx context.Context, patientID string) (domain.Patient, error){
+func (s *PatientService) GetMe(ctx context.Context, patientID string) (domain.Patient, error) {
 	patient, err := s.repo.FindByID(ctx, patientID)
 
 	if err != nil {

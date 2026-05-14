@@ -43,6 +43,10 @@ func main() {
 	patientService := service.NewPatientService(patientRepo, cfg)
 	patientHandler := handler.NewPatientHandler(patientService)
 
+	doctorRepo := repository.NewDoctorRepository(pool)
+	doctorService := service.NewDoctorService(doctorRepo, cfg)
+	doctorHandler := handler.NewDoctorHandler(doctorService)
+
 	// if in production mode, set gin to release mode
 	if cfg.ServerEnv == "production" {
 		gin.SetMode(gin.ReleaseMode)
@@ -84,11 +88,25 @@ func main() {
 			auth.POST("/login", patientHandler.Login)
 		}
 
+		doctorAuth := v1.Group("/doctors/auth")
+		{
+			doctorAuth.POST("/register", doctorHandler.RegisterDoctor)
+			doctorAuth.POST("/login", doctorHandler.Login)
+		}
+
 		patients := v1.Group("/patients")
 		patients.Use(middleware.AuthMiddleware(cfg))
 
 		{
 			patients.GET("/me", patientHandler.GetMe)
+		}
+
+		doctors := v1.Group("/doctors")
+		doctors.Use(middleware.AuthMiddleware(cfg))
+
+		{
+			doctors.GET("/me", doctorHandler.GetMe)
+			doctors.GET("", doctorHandler.GetAll)
 		}
 
 	}
