@@ -24,5 +24,16 @@ services:
       - postgres
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    container_name: healthconnect_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - healthconnect_redis_data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
 volumes:
   healthconnect_pgdata:
+  healthconnect_redis_data:

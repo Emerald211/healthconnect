@@ -16,6 +16,7 @@ import (
 	"github.com/Emerald211/healthconnect/internal/middleware"
 	"github.com/Emerald211/healthconnect/internal/repository"
 	"github.com/Emerald211/healthconnect/internal/service"
+	"github.com/Emerald211/healthconnect/internal/store"
 	"github.com/gin-gonic/gin"
 )
 
@@ -39,12 +40,24 @@ func main() {
 
 	fmt.Println("Database connected successfully")
 
+	redisClient, err := db.NewRedisClient(cfg)
+
+	if err != nil {
+		log.Fatalf("failed to connect to redis: %v", err)
+	}
+
+	defer redisClient.Close()
+
+	fmt.Println("Redis connected successfully")
+
+	tokenStore := store.NewTokenStore(redisClient)
+
 	patientRepo := repository.NewPatientRepository(pool)
-	patientService := service.NewPatientService(patientRepo, cfg)
+	patientService := service.NewPatientService(patientRepo, cfg, tokenStore)
 	patientHandler := handler.NewPatientHandler(patientService)
 
 	doctorRepo := repository.NewDoctorRepository(pool)
-	doctorService := service.NewDoctorService(doctorRepo, cfg)
+	doctorService := service.NewDoctorService(doctorRepo, cfg, tokenStore)
 	doctorHandler := handler.NewDoctorHandler(doctorService)
 
 	// if in production mode, set gin to release mode
@@ -86,27 +99,38 @@ func main() {
 		{
 			auth.POST("/register", patientHandler.Register)
 			auth.POST("/login", patientHandler.Login)
+			auth.POST("/refresh", patientHandler.RefreshToken)
 		}
 
 		doctorAuth := v1.Group("/doctors/auth")
 		{
 			doctorAuth.POST("/register", doctorHandler.RegisterDoctor)
 			doctorAuth.POST("/login", doctorHandler.Login)
+			doctorAuth.POST("/refresh", doctorHandler.RefreshToken)
 		}
 
 		patients := v1.Group("/patients")
 		patients.Use(middleware.AuthMiddleware(cfg))
+		patients.Use(middleware.RoleMiddleware("patient"))
 
 		{
 			patients.GET("/me", patientHandler.GetMe)
+			patients.POST("/logout", patientHandler.Logout)
 		}
 
 		doctors := v1.Group("/doctors")
 		doctors.Use(middleware.AuthMiddleware(cfg))
+		doctors.Use(middleware.RoleMiddleware("doctor"))
 
 		{
 			doctors.GET("/me", doctorHandler.GetMe)
-			doctors.GET("", doctorHandler.GetAll)
+			doctors.POST("/logout", doctorHandler.Logout)
+		}
+
+		doctorList := v1.Group("/doctors")
+		doctorList.Use(middleware.AuthMiddleware(cfg))
+		{
+			doctorList.GET("", doctorHandler.GetAll)
 		}
 
 	}

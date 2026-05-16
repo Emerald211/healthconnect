@@ -1,6 +1,8 @@
 package jwt
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -8,15 +10,15 @@ import (
 )
 
 type Claims struct {
-	PatientID string `json:"patient_id"`
+	UserID string `json:"user_id"`
 	Email     string `json:"email"`
 	Role      string `json:"role"`
 	jwt.RegisteredClaims
 }
 
-func GenerateToken(patientID, email, role, secret string, expiryHours int) (string, error) {
+func GenerateToken(userID, email, role, secret string, expiryHours int) (string, error) {
 	claims := Claims{
-		PatientID: patientID,
+		UserID: userID,
 		Email:     email,
 		Role:      role,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -53,4 +55,13 @@ func VerifyToken(tokenString, secret string) (*Claims, error) {
 	}
 
 	return claims, nil
+}
+
+// random string store in redis
+func GenerateRefreshToken() (string, error) {
+	bytes := make([]byte, 32)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", fmt.Errorf("generating refresh token: %w", err)
+	}
+	return hex.EncodeToString(bytes), nil
 }

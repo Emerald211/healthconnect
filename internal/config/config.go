@@ -16,9 +16,13 @@ type Config struct {
 	DBPassword string
 	DBName     string
 
-	JWTSecret      string
-	JWTExpiryHours int
-	JWTRefreshDays int
+	JWTSecret        string
+	JWTExpiryMinutes int
+	JWTRefreshDays   int
+
+	RedisHost     string
+	RedisPort     string
+	RedisPassword string
 }
 
 func Load() (*Config, error) {
@@ -36,16 +40,19 @@ func Load() (*Config, error) {
 	viper.SetDefault("JWT_REFRESH_DAYS", 7)
 
 	cfg := &Config{
-		ServerPort:     viper.GetString("SERVER_PORT"),
-		ServerEnv:      viper.GetString("SERVER_ENV"),
-		DBHost:         viper.GetString("DB_HOST"),
-		DBPort:         viper.GetString("DB_PORT"),
-		DBUser:         viper.GetString("DB_USER"),
-		DBPassword:     viper.GetString("DB_PASSWORD"),
-		DBName:         viper.GetString("DB_NAME"),
-		JWTSecret:      viper.GetString("JWT_SECRET"),
-		JWTExpiryHours: viper.GetInt("JWT_EXPIRY_HOURS"),
-		JWTRefreshDays: viper.GetInt("JWT_REFRESH_DAYS"),
+		ServerPort:       viper.GetString("SERVER_PORT"),
+		ServerEnv:        viper.GetString("SERVER_ENV"),
+		DBHost:           viper.GetString("DB_HOST"),
+		DBPort:           viper.GetString("DB_PORT"),
+		DBUser:           viper.GetString("DB_USER"),
+		DBPassword:       viper.GetString("DB_PASSWORD"),
+		DBName:           viper.GetString("DB_NAME"),
+		JWTSecret:        viper.GetString("JWT_SECRET"),
+		JWTExpiryMinutes: viper.GetInt("JWT_EXPIRY_MINUTES"),
+		JWTRefreshDays:   viper.GetInt("JWT_REFRESH_DAYS"),
+		RedisHost:        viper.GetString("REDIS_HOST"),
+		RedisPort:        viper.GetString("REDIS_PORT"),
+		RedisPassword:    viper.GetString("REDIS_PASSWORD"),
 	}
 
 	if err := cfg.validate(); err != nil {

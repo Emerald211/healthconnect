@@ -33,6 +33,7 @@ type RegisterDoctorDTO struct {
 type DoctorAuthResponse struct {
 	Doctor      Doctor `json:"doctor"`
 	AccessToken string `json:"access_token"`
+	RefreshToken string  `json:"refresh_token"`
 }
 
 var (

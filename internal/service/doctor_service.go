@@ -7,19 +7,22 @@ import (
 	"github.com/Emerald211/healthconnect/internal/config"
 	"github.com/Emerald211/healthconnect/internal/domain"
 	"github.com/Emerald211/healthconnect/internal/repository"
+	"github.com/Emerald211/healthconnect/internal/store"
 	"github.com/Emerald211/healthconnect/pkg/jwt"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type DoctorService struct {
-	repo *repository.DoctorRepository
-	cfg  *config.Config
+	repo       *repository.DoctorRepository
+	cfg        *config.Config
+	tokenStore *store.TokenStore
 }
 
-func NewDoctorService(repo *repository.DoctorRepository, cfg *config.Config) *DoctorService {
+func NewDoctorService(repo *repository.DoctorRepository, cfg *config.Config, tokenStore *store.TokenStore) *DoctorService {
 	return &DoctorService{
-		repo: repo,
-		cfg:  cfg,
+		repo:       repo,
+		cfg:        cfg,
+		tokenStore: tokenStore,
 	}
 }
 
@@ -67,20 +70,41 @@ func (s *DoctorService) RegisterDoctor(ctx context.Context, req domain.RegisterD
 		return domain.DoctorAuthResponse{}, fmt.Errorf("doctor service register: %w", err)
 	}
 
-	token, err := jwt.GenerateToken(newDoctor.ID, newDoctor.Email, "doctor",s.cfg.JWTSecret, s.cfg.JWTExpiryHours)
+	token, err := jwt.GenerateToken(newDoctor.ID, newDoctor.Email, "doctor", s.cfg.JWTSecret, s.cfg.JWTExpiryMinutes)
 
 	if err != nil {
 		return domain.DoctorAuthResponse{}, fmt.Errorf("generating token: %w", err)
 	}
 
+	refreshToken, err := jwt.GenerateRefreshToken()
+	if err != nil {
+		return domain.DoctorAuthResponse{}, fmt.Errorf("generating refresh token: %w", err)
+	}
+
+	if err := s.tokenStore.SaveRefreshToken(ctx, newDoctor.ID, refreshToken, s.cfg.JWTExpiryMinutes); err != nil {
+		return domain.DoctorAuthResponse{}, fmt.Errorf("saving refresh token: %w", err)
+	}
+
 	return domain.DoctorAuthResponse{
-		Doctor:      newDoctor,
-		AccessToken: token,
+		Doctor:       newDoctor,
+		AccessToken:  token,
+		RefreshToken: refreshToken,
 	}, nil
 
 }
 
 func (s *DoctorService) Login(ctx context.Context, req domain.LoginDto) (domain.DoctorAuthResponse, error) {
+
+	attempts, err := s.tokenStore.IncrementLoginAttempts(ctx, req.Email)
+
+	if err != nil {
+		return domain.DoctorAuthResponse{}, fmt.Errorf("checking login attempts: %w", err)
+	}
+
+	if attempts > 5 {
+		return domain.DoctorAuthResponse{}, domain.ErrTooManyAttempts
+	}
+
 	doctor, hashedPassword, err := s.repo.FindByEmail(ctx, req.Email)
 
 	if err != nil {
@@ -91,20 +115,78 @@ func (s *DoctorService) Login(ctx context.Context, req domain.LoginDto) (domain.
 		return domain.DoctorAuthResponse{}, domain.ErrDoctorInvalidPass
 	}
 
-	token, err := jwt.GenerateToken(doctor.ID, doctor.Email, "doctor",s.cfg.JWTSecret, s.cfg.JWTExpiryHours)
+	token, err := jwt.GenerateToken(doctor.ID, doctor.Email, "doctor", s.cfg.JWTSecret, s.cfg.JWTExpiryMinutes)
 
 	if err != nil {
 		return domain.DoctorAuthResponse{}, fmt.Errorf("generating token: %w", err)
 	}
 
+	refreshToken, err := jwt.GenerateRefreshToken()
+
+	if err != nil {
+		return domain.DoctorAuthResponse{}, fmt.Errorf("generating refresh token: %w", err)
+	}
+
+	if err := s.tokenStore.SaveRefreshToken(ctx, doctor.ID, refreshToken, s.cfg.JWTExpiryMinutes); err != nil {
+		return domain.DoctorAuthResponse{}, fmt.Errorf("saving refresh token: %w", err)
+	}
+
 	return domain.DoctorAuthResponse{
-		Doctor:      doctor,
-		AccessToken: token,
+		Doctor:       doctor,
+		AccessToken:  token,
+		RefreshToken: refreshToken,
 	}, nil
 }
 
+func (s *DoctorService) RefreshToken(ctx context.Context, req domain.RefreshTokenRequest) (domain.DoctorAuthResponse, error) {
+	storedToken, err := s.tokenStore.GetRefreshToken(ctx, req.UserID)
 
-func (s *DoctorService) GetMe(ctx context.Context, doctorID string) (domain.Doctor, error){
+	if err != nil {
+		return domain.DoctorAuthResponse{}, domain.ErrInvalidToken
+	}
+
+	if storedToken != req.RefreshToken {
+		return domain.DoctorAuthResponse{}, domain.ErrInvalidToken
+	}
+
+	doctor, err := s.repo.FindByID(ctx, req.UserID)
+
+	if err != nil {
+		return domain.DoctorAuthResponse{}, domain.ErrDoctorNotFound
+	}
+
+	newAccessToken, err := jwt.GenerateToken(doctor.ID, doctor.Email, "doctor", s.cfg.JWTSecret, s.cfg.JWTExpiryMinutes)
+
+	if err != nil {
+		return domain.DoctorAuthResponse{}, fmt.Errorf("generating access token: %w", err)
+	}
+
+	newRefreshToken, err := jwt.GenerateRefreshToken()
+
+	if err != nil {
+		return domain.DoctorAuthResponse{}, fmt.Errorf("getting refresh token: %w", err)
+	}
+
+	if err := s.tokenStore.SaveRefreshToken(ctx, doctor.ID, newRefreshToken, s.cfg.JWTRefreshDays); err != nil {
+		return domain.DoctorAuthResponse{}, fmt.Errorf("saving refresh token: %w", err)
+	}
+
+	return domain.DoctorAuthResponse{
+		Doctor:       doctor,
+		AccessToken:  newAccessToken,
+		RefreshToken: newRefreshToken,
+	}, nil
+}
+
+func (s *DoctorService) Logout(ctx context.Context, doctorID string) error {
+	if err := s.tokenStore.DeleteRefreshToken(ctx, doctorID); err != nil {
+		return fmt.Errorf("logout: %w", err)
+	}
+
+	return nil
+}
+
+func (s *DoctorService) GetMe(ctx context.Context, doctorID string) (domain.Doctor, error) {
 	doctor, err := s.repo.FindByID(ctx, doctorID)
 
 	if err != nil {
@@ -121,5 +203,5 @@ func (s *DoctorService) GetAllDoctors(ctx context.Context, specialty string) ([]
 		return nil, fmt.Errorf("doctor service get all doctors: %w", err)
 	}
 
-	return doctors, nil	
+	return doctors, nil
 }

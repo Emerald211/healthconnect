@@ -63,8 +63,50 @@ func (h *PatientHandler) Login(c *gin.Context) {
 	response.Success(c, http.StatusOK, patient)
 }
 
+func (h *PatientHandler) RefreshToken(c *gin.Context) {
+	var req domain.RefreshTokenRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "validation_error",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	result, err := h.service.RefreshToken(c.Request.Context(), req)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, result)
+}
+
+func (h *PatientHandler) Logout(c *gin.Context) {
+	
+	patientID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"success": false,
+			"error":   "unauthorized",
+			"message": "not authenticated",
+		})
+		return
+	}
+
+	if err := h.service.Logout(c.Request.Context(), patientID.(string)); err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, gin.H{
+		"message": "logged out successfully",
+	})
+}
+
 func (h *PatientHandler) GetMe(c *gin.Context) {
-	patientId, exists := c.Get("patient_id")
+	patientId, exists := c.Get("user_id")
 
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{

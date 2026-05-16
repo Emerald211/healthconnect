@@ -33,6 +33,12 @@ type LoginDto struct {
 type AuthResponse struct {
 	Patient     Patient `json:"patient"`
 	AccessToken string  `json:"access_token"`
+	RefreshToken string  `json:"refresh_token"`
+}
+
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token" binding:"required"`
+	UserID       string `json:"user_id"       binding:"required"`
 }
 
 var (
