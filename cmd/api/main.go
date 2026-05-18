@@ -51,13 +51,14 @@ func main() {
 	fmt.Println("Redis connected successfully")
 
 	tokenStore := store.NewTokenStore(redisClient)
+	emailService := service.NewEmailService(cfg)
 
 	patientRepo := repository.NewPatientRepository(pool)
-	patientService := service.NewPatientService(patientRepo, cfg, tokenStore)
+	patientService := service.NewPatientService(patientRepo, cfg, tokenStore, emailService)
 	patientHandler := handler.NewPatientHandler(patientService)
 
 	doctorRepo := repository.NewDoctorRepository(pool)
-	doctorService := service.NewDoctorService(doctorRepo, cfg, tokenStore)
+	doctorService := service.NewDoctorService(doctorRepo, cfg, tokenStore, emailService)
 	doctorHandler := handler.NewDoctorHandler(doctorService)
 
 	// if in production mode, set gin to release mode
@@ -100,6 +101,11 @@ func main() {
 			auth.POST("/register", patientHandler.Register)
 			auth.POST("/login", patientHandler.Login)
 			auth.POST("/refresh", patientHandler.RefreshToken)
+			auth.POST("/verify-email", patientHandler.VerifyEmail)
+			auth.POST("/resend-otp", patientHandler.ResendOTP)
+			auth.POST("/forgot-password", patientHandler.ForgotPassword)
+			auth.POST("/reset-password", patientHandler.ResetPassword)
+
 		}
 
 		doctorAuth := v1.Group("/doctors/auth")
@@ -107,6 +113,10 @@ func main() {
 			doctorAuth.POST("/register", doctorHandler.RegisterDoctor)
 			doctorAuth.POST("/login", doctorHandler.Login)
 			doctorAuth.POST("/refresh", doctorHandler.RefreshToken)
+			doctorAuth.POST("/verify-email", doctorHandler.VerifyEmail)
+			doctorAuth.POST("/resend-otp", doctorHandler.ResendOTP)
+			doctorAuth.POST("/forgot-password", doctorHandler.ForgotPassword)
+			doctorAuth.POST("/reset-password", doctorHandler.ResetPassword)
 		}
 
 		patients := v1.Group("/patients")
@@ -116,6 +126,7 @@ func main() {
 		{
 			patients.GET("/me", patientHandler.GetMe)
 			patients.POST("/logout", patientHandler.Logout)
+			patients.POST("/change-password", patientHandler.ChangePassword)
 		}
 
 		doctors := v1.Group("/doctors")
@@ -125,6 +136,7 @@ func main() {
 		{
 			doctors.GET("/me", doctorHandler.GetMe)
 			doctors.POST("/logout", doctorHandler.Logout)
+			doctors.POST("/change-password", doctorHandler.ChangePassword)
 		}
 
 		doctorList := v1.Group("/doctors")

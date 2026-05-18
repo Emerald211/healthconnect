@@ -89,7 +89,7 @@ func (r *DoctorRepository) Create(ctx context.Context, d domain.Doctor, hashedPa
 func (r *DoctorRepository) FindByEmail(ctx context.Context, email string) (domain.Doctor, string, error) {
 	query := `
 		SELECT id, name, email, phone, password, specialty, license_number,
-		       years_experience, consultation_fee, bio, is_active, is_verified, created_at, updated_at
+		       years_experience, consultation_fee, bio, is_active, is_verified, is_email_verified, created_at, updated_at
 		FROM doctors WHERE email = $1
 	`
 	var doctor domain.Doctor
@@ -107,6 +107,7 @@ func (r *DoctorRepository) FindByEmail(ctx context.Context, email string) (domai
 		&doctor.Bio,
 		&doctor.IsActive,
 		&doctor.IsVerified,
+		&doctor.IsEmailVerified,
 		&doctor.CreatedAt,
 		&doctor.UpdatedAt,
 	)
@@ -119,22 +120,25 @@ func (r *DoctorRepository) FindByEmail(ctx context.Context, email string) (domai
 	return doctor, hashedPassword, nil
 }
 
-func (r *DoctorRepository) FindByID(ctx context.Context, id string) (domain.Doctor, error) {
+func (r *DoctorRepository) FindByID(ctx context.Context, id string) (domain.Doctor, string, error) {
 	query := `
-		SELECT id, name, email, phone, specialty, license_number,
-		       years_experience, consultation_fee, bio, is_active, is_verified, created_at, updated_at
+		SELECT id, name, email, phone, password, specialty, license_number,
+		       years_experience, consultation_fee, bio, is_active, is_verified, is_email_verified,created_at, updated_at
 		FROM doctors WHERE id = $1
 	`
 	var doctor domain.Doctor
+	var hashedPassword string
 	err := r.db.QueryRow(ctx, query, id).Scan(
 		&doctor.ID,
 		&doctor.Name,
 		&doctor.Email,
 		&doctor.Phone,
+		&hashedPassword,
 		&doctor.Specialty,
 		&doctor.LicenseNumber,
 		&doctor.YearsExperience,
 		&doctor.ConsultationFee,
+		&doctor.IsEmailVerified,
 		&doctor.Bio,
 		&doctor.IsActive,
 		&doctor.IsVerified,
@@ -143,17 +147,17 @@ func (r *DoctorRepository) FindByID(ctx context.Context, id string) (domain.Doct
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return domain.Doctor{}, domain.ErrDoctorNotFound
+			return domain.Doctor{}, "", domain.ErrDoctorNotFound
 		}
-		return domain.Doctor{}, fmt.Errorf("finding doctor by id: %w", err)
+		return domain.Doctor{}, "", fmt.Errorf("finding doctor by id: %w", err)
 	}
-	return doctor, nil
+	return doctor, hashedPassword, nil
 }
 
 func (r *DoctorRepository) FindAll(ctx context.Context, specialty string) ([]domain.Doctor, error) {
 	query := `
 		SELECT id, name, email, phone, specialty, license_number,
-		       years_experience, consultation_fee, bio, is_active, is_verified, created_at, updated_at
+		       years_experience, consultation_fee, bio, is_active, is_verified, is_email_verified, created_at, updated_at
 		FROM doctors
 		WHERE is_active = true
 		AND ($1 = '' OR specialty ILIKE $1)
@@ -180,6 +184,7 @@ func (r *DoctorRepository) FindAll(ctx context.Context, specialty string) ([]dom
 			&doctor.Bio,
 			&doctor.IsActive,
 			&doctor.IsVerified,
+			&doctor.IsEmailVerified,
 			&doctor.CreatedAt,
 			&doctor.UpdatedAt,
 		)
@@ -189,4 +194,22 @@ func (r *DoctorRepository) FindAll(ctx context.Context, specialty string) ([]dom
 		doctors = append(doctors, doctor)
 	}
 	return doctors, nil
+}
+
+func (r *DoctorRepository) MarkEmailVerified(ctx context.Context, email string) error {
+	query := `UPDATE doctors SET is_email_verified = true, updated_at = NOW() WHERE email = $1`
+	_, err := r.db.Exec(ctx, query, email)
+	if err != nil {
+		return fmt.Errorf("marking doctor email verified: %w", err)
+	}
+	return nil
+}
+
+func (r *DoctorRepository) UpdatePassword(ctx context.Context, email, hashedPassword string) error {
+	query := `UPDATE doctors SET password = $1, updated_at = NOW() WHERE email = $2`
+	_, err := r.db.Exec(ctx, query, hashedPassword, email)
+	if err != nil {
+		return fmt.Errorf("updating doctor password: %w", err)
+	}
+	return nil
 }

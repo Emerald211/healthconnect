@@ -9,20 +9,23 @@ import (
 	"github.com/Emerald211/healthconnect/internal/repository"
 	"github.com/Emerald211/healthconnect/internal/store"
 	"github.com/Emerald211/healthconnect/pkg/jwt"
+	"github.com/Emerald211/healthconnect/pkg/otp"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type DoctorService struct {
-	repo       *repository.DoctorRepository
-	cfg        *config.Config
-	tokenStore *store.TokenStore
+	repo         *repository.DoctorRepository
+	cfg          *config.Config
+	tokenStore   *store.TokenStore
+	emailService *EmailService
 }
 
-func NewDoctorService(repo *repository.DoctorRepository, cfg *config.Config, tokenStore *store.TokenStore) *DoctorService {
+func NewDoctorService(repo *repository.DoctorRepository, cfg *config.Config, tokenStore *store.TokenStore, emailService *EmailService) *DoctorService {
 	return &DoctorService{
-		repo:       repo,
-		cfg:        cfg,
-		tokenStore: tokenStore,
+		repo:         repo,
+		cfg:          cfg,
+		tokenStore:   tokenStore,
+		emailService: emailService,
 	}
 }
 
@@ -84,6 +87,15 @@ func (s *DoctorService) RegisterDoctor(ctx context.Context, req domain.RegisterD
 	if err := s.tokenStore.SaveRefreshToken(ctx, newDoctor.ID, refreshToken, s.cfg.JWTExpiryMinutes); err != nil {
 		return domain.DoctorAuthResponse{}, fmt.Errorf("saving refresh token: %w", err)
 	}
+
+	go func() {
+		code, err := otp.Generate()
+		if err != nil {
+			return
+		}
+		s.tokenStore.SaveOTP(context.Background(), "verify_email", newDoctor.Email, code)
+		s.emailService.SendOTP(newDoctor.Email, newDoctor.Name, code, "verify_email")
+	}()
 
 	return domain.DoctorAuthResponse{
 		Doctor:       newDoctor,
@@ -149,7 +161,7 @@ func (s *DoctorService) RefreshToken(ctx context.Context, req domain.RefreshToke
 		return domain.DoctorAuthResponse{}, domain.ErrInvalidToken
 	}
 
-	doctor, err := s.repo.FindByID(ctx, req.UserID)
+	doctor, _, err := s.repo.FindByID(ctx, req.UserID)
 
 	if err != nil {
 		return domain.DoctorAuthResponse{}, domain.ErrDoctorNotFound
@@ -178,6 +190,125 @@ func (s *DoctorService) RefreshToken(ctx context.Context, req domain.RefreshToke
 	}, nil
 }
 
+func (s *DoctorService) SendVerificationEmail(ctx context.Context, email string) error {
+	doctor, _, err := s.repo.FindByEmail(ctx, email)
+	if err != nil {
+		return domain.ErrDoctorNotFound
+	}
+
+	if doctor.IsEmailVerified {
+		return domain.ErrAlreadyVerified
+	}
+
+	code, err := otp.Generate()
+	if err != nil {
+		return fmt.Errorf("generating otp: %w", err)
+	}
+
+	if err := s.tokenStore.SaveOTP(ctx, "verify_email", doctor.Email, code); err != nil {
+		return fmt.Errorf("saving otp: %w", err)
+	}
+
+	if err := s.emailService.SendOTP(doctor.Email, doctor.Name, code, "verify_email"); err != nil {
+		return fmt.Errorf("sending otp: %w", err)
+	}
+
+	return nil
+}
+
+func (s *DoctorService) VerifyEmail(ctx context.Context, req domain.VerifyEmailRequest) error {
+	storedOTP, err := s.tokenStore.GetOTP(ctx, "verify-email", req.Email)
+
+	if err != nil {
+		return domain.ErrInvalidOTP
+	}
+
+	if storedOTP != req.OTP {
+		return domain.ErrInvalidOTP
+	}
+
+	if err := s.repo.MarkEmailVerified(ctx, req.Email); err != nil {
+		return fmt.Errorf("marking email verified: %w", err)
+	}
+
+	s.tokenStore.DeleteOTP(ctx, "verify-email", req.Email)
+
+	return nil
+}
+
+func (s *DoctorService) ForgotPassword(ctx context.Context, req domain.ForgotPasswordRequest) error {
+	doctor, _, err := s.repo.FindByEmail(ctx, req.Email)
+	if err != nil {
+		return nil
+	}
+
+	code, err := otp.Generate()
+	if err != nil {
+		return fmt.Errorf("generating otp: %w", err)
+	}
+
+	if err := s.tokenStore.SaveOTP(ctx, "reset_password", req.Email, code); err != nil {
+		return fmt.Errorf("saving otp: %w", err)
+	}
+
+	if err := s.emailService.SendOTP(req.Email, doctor.Name, code, "reset_password"); err != nil {
+		return fmt.Errorf("sending reset email: %w", err)
+	}
+
+	return nil
+}
+
+func (s *DoctorService) ResetPassword(ctx context.Context, req domain.ResetPasswordRequest) error {
+	storedOTP, err := s.tokenStore.GetOTP(ctx, "reset_password", req.Email)
+	if err != nil {
+		return domain.ErrInvalidOTP
+	}
+
+	if storedOTP != req.OTP {
+		return domain.ErrInvalidOTP
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), 12)
+	if err != nil {
+		return fmt.Errorf("hashing password: %w", err)
+	}
+
+	if err := s.repo.UpdatePassword(ctx, req.Email, string(hashedPassword)); err != nil {
+		return fmt.Errorf("updating password: %w", err)
+	}
+
+	s.tokenStore.DeleteOTP(ctx, "reset_password", req.Email)
+
+	doctor, _, _ := s.repo.FindByEmail(ctx, req.Email)
+	s.tokenStore.DeleteRefreshToken(ctx, doctor.ID)
+
+	return nil
+}
+
+func (s *DoctorService) ChangePassword(ctx context.Context, doctorID string, req domain.ChangePasswordRequest) error {
+	doctor, hashedPassword, err := s.repo.FindByID(ctx, doctorID)
+	if err != nil {
+		return domain.ErrDoctorNotFound
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(req.CurrentPassword)); err != nil {
+		return domain.ErrDoctorInvalidPass
+	}
+
+	newHashed, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), 12)
+	if err != nil {
+		return fmt.Errorf("hashing password: %w", err)
+	}
+
+	if err := s.repo.UpdatePassword(ctx, doctor.Email, string(newHashed)); err != nil {
+		return fmt.Errorf("updating password: %w", err)
+	}
+
+	s.tokenStore.DeleteRefreshToken(ctx, doctorID)
+
+	return nil
+}
+
 func (s *DoctorService) Logout(ctx context.Context, doctorID string) error {
 	if err := s.tokenStore.DeleteRefreshToken(ctx, doctorID); err != nil {
 		return fmt.Errorf("logout: %w", err)
@@ -187,7 +318,7 @@ func (s *DoctorService) Logout(ctx context.Context, doctorID string) error {
 }
 
 func (s *DoctorService) GetMe(ctx context.Context, doctorID string) (domain.Doctor, error) {
-	doctor, err := s.repo.FindByID(ctx, doctorID)
+	doctor, _, err := s.repo.FindByID(ctx, doctorID)
 
 	if err != nil {
 		return domain.Doctor{}, fmt.Errorf("doctor service get me: %w", err)

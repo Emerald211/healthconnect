@@ -23,6 +23,9 @@ type Config struct {
 	RedisHost     string
 	RedisPort     string
 	RedisPassword string
+
+	ResendAPIKey string
+	EmailFrom    string
 }
 
 func Load() (*Config, error) {
@@ -53,6 +56,8 @@ func Load() (*Config, error) {
 		RedisHost:        viper.GetString("REDIS_HOST"),
 		RedisPort:        viper.GetString("REDIS_PORT"),
 		RedisPassword:    viper.GetString("REDIS_PASSWORD"),
+		ResendAPIKey:     viper.GetString("RESEND_API_KEY"),
+		EmailFrom:        viper.GetString("EMAIL_FROM"),
 	}
 
 	if err := cfg.validate(); err != nil {

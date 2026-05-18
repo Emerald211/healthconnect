@@ -14,6 +14,7 @@ type Doctor struct {
 	Bio             string    `json:"bio"`
 	IsActive        bool      `json:"is_active"`
 	IsVerified      bool      `json:"is_verified"`
+	IsEmailVerified bool `json:"is_email_verified"`
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
 }

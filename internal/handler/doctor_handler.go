@@ -81,6 +81,110 @@ func (h *DoctorHandler) RefreshToken(c *gin.Context) {
 	response.Success(c, http.StatusOK, result)
 }
 
+func (h *DoctorHandler) VerifyEmail(c *gin.Context) {
+	var req domain.VerifyEmailRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "validation_error",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	if err := h.service.VerifyEmail(c.Request.Context(), req); err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, gin.H{
+		"message": "email verified successfully",
+	})
+}
+
+func (h *DoctorHandler) ResendOTP(c *gin.Context) {
+	var req domain.ResendOTPRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "validation_error",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	if err := h.service.SendVerificationEmail(c.Request.Context(), req.Email); err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, gin.H{
+		"message": "OTP sent successfully",
+	})
+}
+
+func (h *DoctorHandler) ForgotPassword(c *gin.Context) {
+	var req domain.ForgotPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "validation_error",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	h.service.ForgotPassword(c.Request.Context(), req)
+
+	response.Success(c, http.StatusOK, gin.H{
+		"message": "if your email is registered you will receive a reset code",
+	})
+}
+
+func (h *DoctorHandler) ResetPassword(c *gin.Context) {
+	var req domain.ResetPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "validation_error",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	if err := h.service.ResetPassword(c.Request.Context(), req); err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, gin.H{
+		"message": "password reset successfully, please login",
+	})
+}
+
+func (h *DoctorHandler) ChangePassword(c *gin.Context) {
+	var req domain.ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "validation_error",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	userID, _ := c.Get("user_id")
+
+	if err := h.service.ChangePassword(c.Request.Context(), userID.(string), req); err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, gin.H{
+		"message": "password changed successfully",
+	})
+}
+
 func (h *DoctorHandler) Logout(c *gin.Context) {
 	doctorID, exists := c.Get("user_id")
 
