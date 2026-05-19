@@ -17,6 +17,17 @@ func NewDoctorHandler(service *service.DoctorService) *DoctorHandler {
 	return &DoctorHandler{service: service}
 }
 
+// RegisterDoctor godoc
+// @Summary      Register a new doctor
+// @Description  Creates a new doctor account and sends OTP to email
+// @Tags         doctor-auth
+// @Accept       json
+// @Produce      json
+// @Param        request  body      domain.RegisterDoctorDTO  true  "Doctor registration data"
+// @Success      201      {object}  domain.DoctorAuthResponse
+// @Failure      400      {object}  map[string]interface{}
+// @Failure      409      {object}  map[string]interface{}
+// @Router       /api/v1/doctors/auth/register [post]
 func (h *DoctorHandler) RegisterDoctor(c *gin.Context) {
 	var req domain.RegisterDoctorDTO
 
@@ -39,6 +50,16 @@ func (h *DoctorHandler) RegisterDoctor(c *gin.Context) {
 	response.Success(c, http.StatusCreated, result)
 }
 
+// Login godoc
+// @Summary      Login as a doctor
+// @Description  Authenticates a doctor and returns access + refresh tokens
+// @Tags         doctor-auth
+// @Accept       json
+// @Produce      json
+// @Param        request  body      domain.LoginDto  true  "Login credentials"
+// @Success      200      {object}  domain.DoctorAuthResponse
+// @Failure      401      {object}  map[string]interface{}
+// @Router       /api/v1/doctors/auth/login [post]
 func (h *DoctorHandler) Login(c *gin.Context) {
 	var req domain.LoginDto
 
@@ -61,6 +82,16 @@ func (h *DoctorHandler) Login(c *gin.Context) {
 	response.Success(c, http.StatusOK, result)
 }
 
+// RefreshToken godoc
+// @Summary      Refresh doctor access token
+// @Description  Issues a new access token using a valid refresh token
+// @Tags         doctor-auth
+// @Accept       json
+// @Produce      json
+// @Param        request  body      domain.RefreshTokenRequest  true  "Refresh token data"
+// @Success      200      {object}  domain.DoctorAuthResponse
+// @Failure      401      {object}  map[string]interface{}
+// @Router       /api/v1/doctors/auth/refresh [post]
 func (h *DoctorHandler) RefreshToken(c *gin.Context) {
 	var req domain.RefreshTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -81,6 +112,16 @@ func (h *DoctorHandler) RefreshToken(c *gin.Context) {
 	response.Success(c, http.StatusOK, result)
 }
 
+// VerifyEmail godoc
+// @Summary      Verify doctor email with OTP
+// @Description  Verifies a doctor's email using the OTP sent during registration
+// @Tags         doctor-auth
+// @Accept       json
+// @Produce      json
+// @Param        request  body      domain.VerifyEmailRequest  true  "Email and OTP"
+// @Success      200      {object}  map[string]interface{}
+// @Failure      400      {object}  map[string]interface{}
+// @Router       /api/v1/doctors/auth/verify-email [post]
 func (h *DoctorHandler) VerifyEmail(c *gin.Context) {
 	var req domain.VerifyEmailRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -102,6 +143,15 @@ func (h *DoctorHandler) VerifyEmail(c *gin.Context) {
 	})
 }
 
+// ResendOTP godoc
+// @Summary      Resend doctor verification OTP
+// @Description  Resends the email verification OTP to the doctor
+// @Tags         doctor-auth
+// @Accept       json
+// @Produce      json
+// @Param        request  body      domain.ResendOTPRequest  true  "Doctor email"
+// @Success      200      {object}  map[string]interface{}
+// @Router       /api/v1/doctors/auth/resend-otp [post]
 func (h *DoctorHandler) ResendOTP(c *gin.Context) {
 	var req domain.ResendOTPRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -123,6 +173,15 @@ func (h *DoctorHandler) ResendOTP(c *gin.Context) {
 	})
 }
 
+// ForgotPassword godoc
+// @Summary      Request doctor password reset
+// @Description  Sends a password reset OTP to the doctor's email
+// @Tags         doctor-auth
+// @Accept       json
+// @Produce      json
+// @Param        request  body      domain.ForgotPasswordRequest  true  "Doctor email"
+// @Success      200      {object}  map[string]interface{}
+// @Router       /api/v1/doctors/auth/forgot-password [post]
 func (h *DoctorHandler) ForgotPassword(c *gin.Context) {
 	var req domain.ForgotPasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -141,6 +200,16 @@ func (h *DoctorHandler) ForgotPassword(c *gin.Context) {
 	})
 }
 
+// ResetPassword godoc
+// @Summary      Reset doctor password with OTP
+// @Description  Resets the doctor's password using the OTP sent to their email
+// @Tags         doctor-auth
+// @Accept       json
+// @Produce      json
+// @Param        request  body      domain.ResetPasswordRequest  true  "Reset password data"
+// @Success      200      {object}  map[string]interface{}
+// @Failure      400      {object}  map[string]interface{}
+// @Router       /api/v1/doctors/auth/reset-password [post]
 func (h *DoctorHandler) ResetPassword(c *gin.Context) {
 	var req domain.ResetPasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -162,6 +231,17 @@ func (h *DoctorHandler) ResetPassword(c *gin.Context) {
 	})
 }
 
+// ChangePassword godoc
+// @Summary      Change doctor password
+// @Description  Changes the authenticated doctor's password
+// @Tags         doctors
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        request  body      domain.ChangePasswordRequest  true  "Change password data"
+// @Success      200      {object}  map[string]interface{}
+// @Failure      401      {object}  map[string]interface{}
+// @Router       /api/v1/doctors/change-password [post]
 func (h *DoctorHandler) ChangePassword(c *gin.Context) {
 	var req domain.ChangePasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -185,6 +265,15 @@ func (h *DoctorHandler) ChangePassword(c *gin.Context) {
 	})
 }
 
+// Logout godoc
+// @Summary      Logout doctor
+// @Description  Invalidates the doctor's refresh token
+// @Tags         doctors
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  map[string]interface{}
+// @Failure      401  {object}  map[string]interface{}
+// @Router       /api/v1/doctors/logout [post]
 func (h *DoctorHandler) Logout(c *gin.Context) {
 	doctorID, exists := c.Get("user_id")
 
@@ -208,6 +297,15 @@ func (h *DoctorHandler) Logout(c *gin.Context) {
 	})
 }
 
+// GetMe godoc
+// @Summary      Get current doctor profile
+// @Description  Returns the authenticated doctor's profile
+// @Tags         doctors
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  domain.Doctor
+// @Failure      401  {object}  map[string]interface{}
+// @Router       /api/v1/doctors/me [get]
 func (h *DoctorHandler) GetMe(c *gin.Context) {
 	doctorID, exists := c.Get("user_id")
 	if !exists {
@@ -228,6 +326,16 @@ func (h *DoctorHandler) GetMe(c *gin.Context) {
 	response.Success(c, http.StatusOK, doctor)
 }
 
+// GetAll godoc
+// @Summary      List all doctors
+// @Description  Returns all active doctors, optionally filtered by specialty
+// @Tags         doctors
+// @Produce      json
+// @Security     BearerAuth
+// @Param        specialty  query     string  false  "Filter by specialty"
+// @Success      200        {object}  []domain.Doctor
+// @Failure      401        {object}  map[string]interface{}
+// @Router       /api/v1/doctors [get]
 func (h *DoctorHandler) GetAll(c *gin.Context) {
 	// Optional query param: /api/v1/doctors?specialty=cardiology
 	specialty := c.Query("specialty")

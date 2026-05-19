@@ -1,0 +1,791 @@
+basePath: /
+definitions:
+  domain.AuthResponse:
+    properties:
+      access_token:
+        type: string
+      patient:
+        $ref: '#/definitions/domain.Patient'
+      refresh_token:
+        type: string
+    type: object
+  domain.ChangePasswordRequest:
+    properties:
+      current_password:
+        type: string
+      new_password:
+        minLength: 8
+        type: string
+    required:
+    - current_password
+    - new_password
+    type: object
+  domain.Doctor:
+    properties:
+      bio:
+        type: string
+      consultation_fee:
+        type: number
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      is_email_verified:
+        type: boolean
+      is_verified:
+        type: boolean
+      license_number:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      specialty:
+        type: string
+      updated_at:
+        type: string
+      years_experience:
+        type: integer
+    type: object
+  domain.DoctorAuthResponse:
+    properties:
+      access_token:
+        type: string
+      doctor:
+        $ref: '#/definitions/domain.Doctor'
+      refresh_token:
+        type: string
+    type: object
+  domain.ForgotPasswordRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  domain.LoginDto:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  domain.Patient:
+    properties:
+      address:
+        type: string
+      created_at:
+        type: string
+      date_of_birth:
+        type: string
+      email:
+        type: string
+      gender:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      is_email_verified:
+        type: boolean
+      name:
+        type: string
+      phone:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  domain.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        type: string
+      user_id:
+        type: string
+    required:
+    - refresh_token
+    - user_id
+    type: object
+  domain.RegisterDoctorDTO:
+    properties:
+      bio:
+        type: string
+      consultation_fee:
+        minimum: 0
+        type: number
+      email:
+        type: string
+      license_number:
+        type: string
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      password:
+        minLength: 8
+        type: string
+      phone:
+        maxLength: 20
+        minLength: 10
+        type: string
+      specialty:
+        type: string
+      years_experience:
+        minimum: 0
+        type: integer
+    required:
+    - consultation_fee
+    - email
+    - license_number
+    - name
+    - password
+    - phone
+    - specialty
+    - years_experience
+    type: object
+  domain.RegisterPatientDTO:
+    properties:
+      address:
+        type: string
+      date_of_birth:
+        type: string
+      email:
+        type: string
+      gender:
+        enum:
+        - male
+        - female
+        - other
+        type: string
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      password:
+        minLength: 8
+        type: string
+      phone:
+        maxLength: 20
+        minLength: 10
+        type: string
+    required:
+    - date_of_birth
+    - email
+    - gender
+    - name
+    - password
+    - phone
+    type: object
+  domain.ResendOTPRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  domain.ResetPasswordRequest:
+    properties:
+      email:
+        type: string
+      new_password:
+        minLength: 8
+        type: string
+      otp:
+        type: string
+    required:
+    - email
+    - new_password
+    - otp
+    type: object
+  domain.VerifyEmailRequest:
+    properties:
+      email:
+        type: string
+      otp:
+        type: string
+    required:
+    - email
+    - otp
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: your-email@gmail.com
+    name: Emerald
+  description: A production-grade healthcare API for Nigeria — appointment booking,
+    medical records, and telemedicine
+  license:
+    name: MIT
+  termsOfService: http://swagger.io/terms/
+  title: HealthConnect API
+  version: "1.0"
+paths:
+  /api/v1/auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: Sends a password reset OTP to the patient's email
+      parameters:
+      - description: Patient email
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.ForgotPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Request password reset
+      tags:
+      - patient-auth
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a patient and returns access + refresh tokens
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.LoginDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.AuthResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "429":
+          description: Too Many Requests
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Login as a patient
+      tags:
+      - patient-auth
+  /api/v1/auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Issues a new access token using a valid refresh token
+      parameters:
+      - description: Refresh token data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.AuthResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Refresh access token
+      tags:
+      - patient-auth
+  /api/v1/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new patient account and sends OTP to email
+      parameters:
+      - description: Patient registration data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.RegisterPatientDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Register a new patient
+      tags:
+      - patient-auth
+  /api/v1/auth/resend-otp:
+    post:
+      consumes:
+      - application/json
+      description: Resends the email verification OTP to the patient
+      parameters:
+      - description: Patient email
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.ResendOTPRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Resend verification OTP
+      tags:
+      - patient-auth
+  /api/v1/auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Resets the patient's password using the OTP sent to their email
+      parameters:
+      - description: Reset password data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Reset password with OTP
+      tags:
+      - patient-auth
+  /api/v1/auth/verify-email:
+    post:
+      consumes:
+      - application/json
+      description: Verifies a patient's email using the OTP sent during registration
+      parameters:
+      - description: Email and OTP
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.VerifyEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Verify email with OTP
+      tags:
+      - patient-auth
+  /api/v1/doctors:
+    get:
+      description: Returns all active doctors, optionally filtered by specialty
+      parameters:
+      - description: Filter by specialty
+        in: query
+        name: specialty
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Doctor'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List all doctors
+      tags:
+      - doctors
+  /api/v1/doctors/auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: Sends a password reset OTP to the doctor's email
+      parameters:
+      - description: Doctor email
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.ForgotPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Request doctor password reset
+      tags:
+      - doctor-auth
+  /api/v1/doctors/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a doctor and returns access + refresh tokens
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.LoginDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.DoctorAuthResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Login as a doctor
+      tags:
+      - doctor-auth
+  /api/v1/doctors/auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Issues a new access token using a valid refresh token
+      parameters:
+      - description: Refresh token data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.DoctorAuthResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Refresh doctor access token
+      tags:
+      - doctor-auth
+  /api/v1/doctors/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new doctor account and sends OTP to email
+      parameters:
+      - description: Doctor registration data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.RegisterDoctorDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.DoctorAuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Register a new doctor
+      tags:
+      - doctor-auth
+  /api/v1/doctors/auth/resend-otp:
+    post:
+      consumes:
+      - application/json
+      description: Resends the email verification OTP to the doctor
+      parameters:
+      - description: Doctor email
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.ResendOTPRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Resend doctor verification OTP
+      tags:
+      - doctor-auth
+  /api/v1/doctors/auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Resets the doctor's password using the OTP sent to their email
+      parameters:
+      - description: Reset password data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Reset doctor password with OTP
+      tags:
+      - doctor-auth
+  /api/v1/doctors/auth/verify-email:
+    post:
+      consumes:
+      - application/json
+      description: Verifies a doctor's email using the OTP sent during registration
+      parameters:
+      - description: Email and OTP
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.VerifyEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Verify doctor email with OTP
+      tags:
+      - doctor-auth
+  /api/v1/doctors/change-password:
+    post:
+      consumes:
+      - application/json
+      description: Changes the authenticated doctor's password
+      parameters:
+      - description: Change password data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Change doctor password
+      tags:
+      - doctors
+  /api/v1/doctors/logout:
+    post:
+      description: Invalidates the doctor's refresh token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Logout doctor
+      tags:
+      - doctors
+  /api/v1/doctors/me:
+    get:
+      description: Returns the authenticated doctor's profile
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Doctor'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get current doctor profile
+      tags:
+      - doctors
+  /api/v1/patients/change-password:
+    post:
+      consumes:
+      - application/json
+      description: Changes the authenticated patient's password
+      parameters:
+      - description: Change password data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Change password
+      tags:
+      - patients
+  /api/v1/patients/logout:
+    post:
+      description: Invalidates the patient's refresh token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Logout patient
+      tags:
+      - patients
+  /api/v1/patients/me:
+    get:
+      description: Returns the authenticated patient's profile
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Patient'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get current patient profile
+      tags:
+      - patients
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and your JWT token
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

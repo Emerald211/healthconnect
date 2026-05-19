@@ -18,7 +18,29 @@ import (
 	"github.com/Emerald211/healthconnect/internal/service"
 	"github.com/Emerald211/healthconnect/internal/store"
 	"github.com/gin-gonic/gin"
+
+	_ "github.com/Emerald211/healthconnect/docs"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
+
+// @title           HealthConnect API
+// @version         1.0
+// @description     A production-grade healthcare API for Nigeria — appointment booking, medical records, and telemedicine
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   Emerald
+// @contact.email  your-email@gmail.com
+
+// @license.name  MIT
+
+// @host      localhost:8080
+// @BasePath  /
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and your JWT token
 
 func main() {
 
@@ -72,6 +94,8 @@ func main() {
 	// Middlewares
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
+
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	r.GET("/health", func(c *gin.Context) {
 		if err := pool.Ping(c.Request.Context()); err != nil {

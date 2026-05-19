@@ -1,0 +1,1189 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "A production-grade healthcare API for Nigeria — appointment booking, medical records, and telemedicine",
+        "title": "HealthConnect API",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "Emerald",
+            "email": "your-email@gmail.com"
+        },
+        "license": {
+            "name": "MIT"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/api/v1/auth/forgot-password": {
+            "post": {
+                "description": "Sends a password reset OTP to the patient's email",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "patient-auth"
+                ],
+                "summary": "Request password reset",
+                "parameters": [
+                    {
+                        "description": "Patient email",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.ForgotPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/login": {
+            "post": {
+                "description": "Authenticates a patient and returns access + refresh tokens",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "patient-auth"
+                ],
+                "summary": "Login as a patient",
+                "parameters": [
+                    {
+                        "description": "Login credentials",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.LoginDto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.AuthResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/refresh": {
+            "post": {
+                "description": "Issues a new access token using a valid refresh token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "patient-auth"
+                ],
+                "summary": "Refresh access token",
+                "parameters": [
+                    {
+                        "description": "Refresh token data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.RefreshTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.AuthResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/register": {
+            "post": {
+                "description": "Creates a new patient account and sends OTP to email",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "patient-auth"
+                ],
+                "summary": "Register a new patient",
+                "parameters": [
+                    {
+                        "description": "Patient registration data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.RegisterPatientDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/domain.AuthResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/resend-otp": {
+            "post": {
+                "description": "Resends the email verification OTP to the patient",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "patient-auth"
+                ],
+                "summary": "Resend verification OTP",
+                "parameters": [
+                    {
+                        "description": "Patient email",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.ResendOTPRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/reset-password": {
+            "post": {
+                "description": "Resets the patient's password using the OTP sent to their email",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "patient-auth"
+                ],
+                "summary": "Reset password with OTP",
+                "parameters": [
+                    {
+                        "description": "Reset password data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.ResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/verify-email": {
+            "post": {
+                "description": "Verifies a patient's email using the OTP sent during registration",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "patient-auth"
+                ],
+                "summary": "Verify email with OTP",
+                "parameters": [
+                    {
+                        "description": "Email and OTP",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.VerifyEmailRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/doctors": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns all active doctors, optionally filtered by specialty",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "doctors"
+                ],
+                "summary": "List all doctors",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by specialty",
+                        "name": "specialty",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/domain.Doctor"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/doctors/auth/forgot-password": {
+            "post": {
+                "description": "Sends a password reset OTP to the doctor's email",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "doctor-auth"
+                ],
+                "summary": "Request doctor password reset",
+                "parameters": [
+                    {
+                        "description": "Doctor email",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.ForgotPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/doctors/auth/login": {
+            "post": {
+                "description": "Authenticates a doctor and returns access + refresh tokens",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "doctor-auth"
+                ],
+                "summary": "Login as a doctor",
+                "parameters": [
+                    {
+                        "description": "Login credentials",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.LoginDto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.DoctorAuthResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/doctors/auth/refresh": {
+            "post": {
+                "description": "Issues a new access token using a valid refresh token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "doctor-auth"
+                ],
+                "summary": "Refresh doctor access token",
+                "parameters": [
+                    {
+                        "description": "Refresh token data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.RefreshTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.DoctorAuthResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/doctors/auth/register": {
+            "post": {
+                "description": "Creates a new doctor account and sends OTP to email",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "doctor-auth"
+                ],
+                "summary": "Register a new doctor",
+                "parameters": [
+                    {
+                        "description": "Doctor registration data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.RegisterDoctorDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/domain.DoctorAuthResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/doctors/auth/resend-otp": {
+            "post": {
+                "description": "Resends the email verification OTP to the doctor",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "doctor-auth"
+                ],
+                "summary": "Resend doctor verification OTP",
+                "parameters": [
+                    {
+                        "description": "Doctor email",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.ResendOTPRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/doctors/auth/reset-password": {
+            "post": {
+                "description": "Resets the doctor's password using the OTP sent to their email",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "doctor-auth"
+                ],
+                "summary": "Reset doctor password with OTP",
+                "parameters": [
+                    {
+                        "description": "Reset password data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.ResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/doctors/auth/verify-email": {
+            "post": {
+                "description": "Verifies a doctor's email using the OTP sent during registration",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "doctor-auth"
+                ],
+                "summary": "Verify doctor email with OTP",
+                "parameters": [
+                    {
+                        "description": "Email and OTP",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.VerifyEmailRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/doctors/change-password": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Changes the authenticated doctor's password",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "doctors"
+                ],
+                "summary": "Change doctor password",
+                "parameters": [
+                    {
+                        "description": "Change password data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.ChangePasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/doctors/logout": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Invalidates the doctor's refresh token",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "doctors"
+                ],
+                "summary": "Logout doctor",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/doctors/me": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the authenticated doctor's profile",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "doctors"
+                ],
+                "summary": "Get current doctor profile",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.Doctor"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/patients/change-password": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Changes the authenticated patient's password",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "patients"
+                ],
+                "summary": "Change password",
+                "parameters": [
+                    {
+                        "description": "Change password data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.ChangePasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/patients/logout": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Invalidates the patient's refresh token",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "patients"
+                ],
+                "summary": "Logout patient",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/patients/me": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the authenticated patient's profile",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "patients"
+                ],
+                "summary": "Get current patient profile",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.Patient"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "domain.AuthResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "patient": {
+                    "$ref": "#/definitions/domain.Patient"
+                },
+                "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.ChangePasswordRequest": {
+            "type": "object",
+            "required": [
+                "current_password",
+                "new_password"
+            ],
+            "properties": {
+                "current_password": {
+                    "type": "string"
+                },
+                "new_password": {
+                    "type": "string",
+                    "minLength": 8
+                }
+            }
+        },
+        "domain.Doctor": {
+            "type": "object",
+            "properties": {
+                "bio": {
+                    "type": "string"
+                },
+                "consultation_fee": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "is_email_verified": {
+                    "type": "boolean"
+                },
+                "is_verified": {
+                    "type": "boolean"
+                },
+                "license_number": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "specialty": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "years_experience": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.DoctorAuthResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "doctor": {
+                    "$ref": "#/definitions/domain.Doctor"
+                },
+                "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.ForgotPasswordRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.LoginDto": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 8
+                }
+            }
+        },
+        "domain.Patient": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "date_of_birth": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "gender": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "is_email_verified": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.RefreshTokenRequest": {
+            "type": "object",
+            "required": [
+                "refresh_token",
+                "user_id"
+            ],
+            "properties": {
+                "refresh_token": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.RegisterDoctorDTO": {
+            "type": "object",
+            "required": [
+                "consultation_fee",
+                "email",
+                "license_number",
+                "name",
+                "password",
+                "phone",
+                "specialty",
+                "years_experience"
+            ],
+            "properties": {
+                "bio": {
+                    "type": "string"
+                },
+                "consultation_fee": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "email": {
+                    "type": "string"
+                },
+                "license_number": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 8
+                },
+                "phone": {
+                    "type": "string",
+                    "maxLength": 20,
+                    "minLength": 10
+                },
+                "specialty": {
+                    "type": "string"
+                },
+                "years_experience": {
+                    "type": "integer",
+                    "minimum": 0
+                }
+            }
+        },
+        "domain.RegisterPatientDTO": {
+            "type": "object",
+            "required": [
+                "date_of_birth",
+                "email",
+                "gender",
+                "name",
+                "password",
+                "phone"
+            ],
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "date_of_birth": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "gender": {
+                    "type": "string",
+                    "enum": [
+                        "male",
+                        "female",
+                        "other"
+                    ]
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 8
+                },
+                "phone": {
+                    "type": "string",
+                    "maxLength": 20,
+                    "minLength": 10
+                }
+            }
+        },
+        "domain.ResendOTPRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.ResetPasswordRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "new_password",
+                "otp"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "new_password": {
+                    "type": "string",
+                    "minLength": 8
+                },
+                "otp": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.VerifyEmailRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "otp"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "otp": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Type \"Bearer\" followed by a space and your JWT token",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}
