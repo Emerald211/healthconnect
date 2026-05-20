@@ -138,10 +138,10 @@ func (r *DoctorRepository) FindByID(ctx context.Context, id string) (domain.Doct
 		&doctor.LicenseNumber,
 		&doctor.YearsExperience,
 		&doctor.ConsultationFee,
-		&doctor.IsEmailVerified,
 		&doctor.Bio,
 		&doctor.IsActive,
 		&doctor.IsVerified,
+		&doctor.IsEmailVerified,
 		&doctor.CreatedAt,
 		&doctor.UpdatedAt,
 	)

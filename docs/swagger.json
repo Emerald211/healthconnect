@@ -16,6 +16,300 @@
     "host": "localhost:8080",
     "basePath": "/",
     "paths": {
+        "/api/v1/appointments": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Patient books an appointment slot with a doctor",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Book an appointment",
+                "parameters": [
+                    {
+                        "description": "Booking data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.BookAppointmentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/domain.Appointment"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/appointments/availability": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Allows a doctor to set their weekly availability schedule",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Set doctor availability",
+                "parameters": [
+                    {
+                        "description": "Availability data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.SetAvailabilityRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.DoctorAvailability"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/appointments/availability/{doctor_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a doctor's weekly availability schedule",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Get doctor availability",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Doctor ID",
+                        "name": "doctor_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/domain.DoctorAvailability"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/appointments/my": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns all appointments for the logged-in patient",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Get patient appointments",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/domain.Appointment"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/appointments/slots/{doctor_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns all available (unbooked) slots for a doctor on a date",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Get available slots",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Doctor ID",
+                        "name": "doctor_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Date (YYYY-MM-DD)",
+                        "name": "date",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/domain.AppointmentSlot"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/appointments/slots/{doctor_id}/generate": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Generates bookable slots for a doctor on a specific date",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Generate appointment slots",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Doctor ID",
+                        "name": "doctor_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Date (YYYY-MM-DD)",
+                        "name": "date",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/domain.AppointmentSlot"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/appointments/{id}/status": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Allows a doctor to update appointment status and add notes",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Update appointment status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Appointment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Status update",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.UpdateAppointmentStatusRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.Appointment"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/auth/forgot-password": {
             "post": {
                 "description": "Sends a password reset OTP to the patient's email",
@@ -867,6 +1161,88 @@
         }
     },
     "definitions": {
+        "domain.Appointment": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "doctor": {
+                    "$ref": "#/definitions/domain.Doctor"
+                },
+                "doctor_id": {
+                    "type": "string"
+                },
+                "doctor_notes": {
+                    "description": "filled after consultation",
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "notes": {
+                    "description": "patient's reason for visit",
+                    "type": "string"
+                },
+                "patient": {
+                    "description": "Joined fields — populated when we fetch with joins",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/domain.Patient"
+                        }
+                    ]
+                },
+                "patient_id": {
+                    "type": "string"
+                },
+                "slot": {
+                    "$ref": "#/definitions/domain.AppointmentSlot"
+                },
+                "slot_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "pending, confirmed, completed, cancelled",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "consultation, follow_up, emergency",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.AppointmentSlot": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "doctor_id": {
+                    "type": "string"
+                },
+                "end_time": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_booked": {
+                    "type": "boolean"
+                },
+                "start_time": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.AuthResponse": {
             "type": "object",
             "properties": {
@@ -878,6 +1254,29 @@
                 },
                 "refresh_token": {
                     "type": "string"
+                }
+            }
+        },
+        "domain.BookAppointmentRequest": {
+            "type": "object",
+            "required": [
+                "slot_id",
+                "type"
+            ],
+            "properties": {
+                "notes": {
+                    "type": "string"
+                },
+                "slot_id": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "consultation",
+                        "follow_up",
+                        "emergency"
+                    ]
                 }
             }
         },
@@ -954,6 +1353,41 @@
                     "$ref": "#/definitions/domain.Doctor"
                 },
                 "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.DoctorAvailability": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "day_of_week": {
+                    "description": "0=Sunday, 1=Monday...6=Saturday",
+                    "type": "integer"
+                },
+                "doctor_id": {
+                    "type": "string"
+                },
+                "end_time": {
+                    "description": "\"17:00\"",
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "slot_duration_minutes": {
+                    "type": "integer"
+                },
+                "start_time": {
+                    "description": "\"09:00\"",
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -1159,6 +1593,54 @@
                 },
                 "otp": {
                     "type": "string"
+                }
+            }
+        },
+        "domain.SetAvailabilityRequest": {
+            "type": "object",
+            "required": [
+                "day_of_week",
+                "end_time",
+                "slot_duration_minutes",
+                "start_time"
+            ],
+            "properties": {
+                "day_of_week": {
+                    "type": "integer",
+                    "maximum": 6,
+                    "minimum": 0
+                },
+                "end_time": {
+                    "description": "\"17:00\"",
+                    "type": "string"
+                },
+                "slot_duration_minutes": {
+                    "type": "integer",
+                    "maximum": 120,
+                    "minimum": 15
+                },
+                "start_time": {
+                    "description": "\"09:00\"",
+                    "type": "string"
+                }
+            }
+        },
+        "domain.UpdateAppointmentStatusRequest": {
+            "type": "object",
+            "required": [
+                "status"
+            ],
+            "properties": {
+                "doctor_notes": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "confirmed",
+                        "completed",
+                        "cancelled"
+                    ]
                 }
             }
         },

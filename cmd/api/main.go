@@ -83,6 +83,11 @@ func main() {
 	doctorService := service.NewDoctorService(doctorRepo, cfg, tokenStore, emailService)
 	doctorHandler := handler.NewDoctorHandler(doctorService)
 
+	// Appointment layers
+	appointmentRepo := repository.NewAppointmentRepository(pool)
+	appointmentService := service.NewAppointmentService(appointmentRepo, doctorRepo)
+	appointmentHandler := handler.NewAppointmentHandler(appointmentService)
+
 	// if in production mode, set gin to release mode
 	if cfg.ServerEnv == "production" {
 		gin.SetMode(gin.ReleaseMode)
@@ -167,6 +172,33 @@ func main() {
 		doctorList.Use(middleware.AuthMiddleware(cfg))
 		{
 			doctorList.GET("", doctorHandler.GetAll)
+		}
+
+		// Appointment routes
+		appointments := v1.Group("/appointments")
+		appointments.Use(middleware.AuthMiddleware(cfg))
+		{
+			// Any authenticated user can view slots and availability
+			appointments.GET("/slots/:doctor_id", appointmentHandler.GetAvailableSlots)
+			appointments.GET("/availability/:doctor_id", appointmentHandler.GetAvailability)
+
+			// Patient only routes
+			patientAppts := appointments.Group("")
+			patientAppts.Use(middleware.RoleMiddleware("patient"))
+			{
+				patientAppts.POST("", appointmentHandler.BookAppointment)
+				patientAppts.GET("/my", appointmentHandler.GetMyAppointments)
+			}
+
+			// Doctor only routes
+			doctorAppts := appointments.Group("")
+			doctorAppts.Use(middleware.RoleMiddleware("doctor"))
+			{
+				doctorAppts.POST("/availability", appointmentHandler.SetAvailability)
+				doctorAppts.POST("/slots/:doctor_id/generate", appointmentHandler.GenerateSlots)
+				doctorAppts.GET("/doctor/my", appointmentHandler.GetMyAppointments)
+				doctorAppts.PATCH("/:id/status", appointmentHandler.UpdateAppointmentStatus)
+			}
 		}
 
 	}

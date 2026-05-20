@@ -1,5 +1,59 @@
 basePath: /
 definitions:
+  domain.Appointment:
+    properties:
+      amount:
+        type: number
+      created_at:
+        type: string
+      doctor:
+        $ref: '#/definitions/domain.Doctor'
+      doctor_id:
+        type: string
+      doctor_notes:
+        description: filled after consultation
+        type: string
+      id:
+        type: string
+      notes:
+        description: patient's reason for visit
+        type: string
+      patient:
+        allOf:
+        - $ref: '#/definitions/domain.Patient'
+        description: Joined fields — populated when we fetch with joins
+      patient_id:
+        type: string
+      slot:
+        $ref: '#/definitions/domain.AppointmentSlot'
+      slot_id:
+        type: string
+      status:
+        description: pending, confirmed, completed, cancelled
+        type: string
+      type:
+        description: consultation, follow_up, emergency
+        type: string
+      updated_at:
+        type: string
+    type: object
+  domain.AppointmentSlot:
+    properties:
+      created_at:
+        type: string
+      date:
+        type: string
+      doctor_id:
+        type: string
+      end_time:
+        type: string
+      id:
+        type: string
+      is_booked:
+        type: boolean
+      start_time:
+        type: string
+    type: object
   domain.AuthResponse:
     properties:
       access_token:
@@ -8,6 +62,22 @@ definitions:
         $ref: '#/definitions/domain.Patient'
       refresh_token:
         type: string
+    type: object
+  domain.BookAppointmentRequest:
+    properties:
+      notes:
+        type: string
+      slot_id:
+        type: string
+      type:
+        enum:
+        - consultation
+        - follow_up
+        - emergency
+        type: string
+    required:
+    - slot_id
+    - type
     type: object
   domain.ChangePasswordRequest:
     properties:
@@ -58,6 +128,30 @@ definitions:
       doctor:
         $ref: '#/definitions/domain.Doctor'
       refresh_token:
+        type: string
+    type: object
+  domain.DoctorAvailability:
+    properties:
+      created_at:
+        type: string
+      day_of_week:
+        description: 0=Sunday, 1=Monday...6=Saturday
+        type: integer
+      doctor_id:
+        type: string
+      end_time:
+        description: '"17:00"'
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      slot_duration_minutes:
+        type: integer
+      start_time:
+        description: '"09:00"'
+        type: string
+      updated_at:
         type: string
     type: object
   domain.ForgotPasswordRequest:
@@ -204,6 +298,41 @@ definitions:
     - new_password
     - otp
     type: object
+  domain.SetAvailabilityRequest:
+    properties:
+      day_of_week:
+        maximum: 6
+        minimum: 0
+        type: integer
+      end_time:
+        description: '"17:00"'
+        type: string
+      slot_duration_minutes:
+        maximum: 120
+        minimum: 15
+        type: integer
+      start_time:
+        description: '"09:00"'
+        type: string
+    required:
+    - day_of_week
+    - end_time
+    - slot_duration_minutes
+    - start_time
+    type: object
+  domain.UpdateAppointmentStatusRequest:
+    properties:
+      doctor_notes:
+        type: string
+      status:
+        enum:
+        - confirmed
+        - completed
+        - cancelled
+        type: string
+    required:
+    - status
+    type: object
   domain.VerifyEmailRequest:
     properties:
       email:
@@ -227,6 +356,191 @@ info:
   title: HealthConnect API
   version: "1.0"
 paths:
+  /api/v1/appointments:
+    post:
+      consumes:
+      - application/json
+      description: Patient books an appointment slot with a doctor
+      parameters:
+      - description: Booking data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.BookAppointmentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.Appointment'
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Book an appointment
+      tags:
+      - appointments
+  /api/v1/appointments/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Allows a doctor to update appointment status and add notes
+      parameters:
+      - description: Appointment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Status update
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.UpdateAppointmentStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Appointment'
+      security:
+      - BearerAuth: []
+      summary: Update appointment status
+      tags:
+      - appointments
+  /api/v1/appointments/availability:
+    post:
+      consumes:
+      - application/json
+      description: Allows a doctor to set their weekly availability schedule
+      parameters:
+      - description: Availability data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.SetAvailabilityRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.DoctorAvailability'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Set doctor availability
+      tags:
+      - appointments
+  /api/v1/appointments/availability/{doctor_id}:
+    get:
+      description: Returns a doctor's weekly availability schedule
+      parameters:
+      - description: Doctor ID
+        in: path
+        name: doctor_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.DoctorAvailability'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get doctor availability
+      tags:
+      - appointments
+  /api/v1/appointments/my:
+    get:
+      description: Returns all appointments for the logged-in patient
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Appointment'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get patient appointments
+      tags:
+      - appointments
+  /api/v1/appointments/slots/{doctor_id}:
+    get:
+      description: Returns all available (unbooked) slots for a doctor on a date
+      parameters:
+      - description: Doctor ID
+        in: path
+        name: doctor_id
+        required: true
+        type: string
+      - description: Date (YYYY-MM-DD)
+        in: query
+        name: date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.AppointmentSlot'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get available slots
+      tags:
+      - appointments
+  /api/v1/appointments/slots/{doctor_id}/generate:
+    post:
+      consumes:
+      - application/json
+      description: Generates bookable slots for a doctor on a specific date
+      parameters:
+      - description: Doctor ID
+        in: path
+        name: doctor_id
+        required: true
+        type: string
+      - description: Date (YYYY-MM-DD)
+        in: query
+        name: date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.AppointmentSlot'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Generate appointment slots
+      tags:
+      - appointments
   /api/v1/auth/forgot-password:
     post:
       consumes:
