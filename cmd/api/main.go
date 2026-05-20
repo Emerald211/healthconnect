@@ -99,6 +99,9 @@ func main() {
 	// Middlewares
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
+	r.Use(middleware.SecurityHeaders())
+	r.Use(middleware.RequestSizeLimit(10 << 20))
+	r.Use(middleware.CORS(cfg.CORSAllowedOrigins))
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
