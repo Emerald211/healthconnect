@@ -25,7 +25,7 @@ func (r *PaymentRepository) CreatePayment(ctx context.Context, appointmentID, pa
 			INSERT INTO payments (appointment_id, patient_id, amount)
 			VALUES ($1, $2, $3)
 			RETURNING id, appointment_id, patient_id, amount, currency, status,
-			          paystack_reference, paystack_access_code, paid_at, created_at, updated_at
+			          paystack_reference, paystack_access_code, paid_at, expires_at, created_at, updated_at
 		`
 
 	err := r.db.QueryRow(ctx, query, appointmentID, patientID, amount).Scan(
@@ -38,6 +38,7 @@ func (r *PaymentRepository) CreatePayment(ctx context.Context, appointmentID, pa
 		&p.PaystackReference,
 		&p.PaystackAccessCode,
 		&p.PaidAt,
+		&p.ExpiresAt,
 		&p.CreatedAt,
 		&p.UpdatedAt,
 	)
@@ -103,7 +104,7 @@ func (r *PaymentRepository) ConfirmPayment(ctx context.Context, reference string
 func (r *PaymentRepository) GetByAppointmentID(ctx context.Context, appointmentID string) (domain.Payment, error) {
 	query := `
 			SELECT id, appointment_id, patient_id, amount, currency, status,
-			       paystack_reference, paystack_access_code, paid_at, created_at, updated_at
+			       paystack_reference, paystack_access_code, paid_at, expires_at, created_at, updated_at
 			FROM payments WHERE appointment_id = $1
 			ORDER BY created_at DESC
 			LIMIT 1
@@ -121,6 +122,7 @@ func (r *PaymentRepository) GetByAppointmentID(ctx context.Context, appointmentI
 		&payment.PaystackReference,
 		&payment.PaystackAccessCode,
 		&payment.PaidAt,
+		&payment.ExpiresAt,
 		&payment.CreatedAt,
 		&payment.UpdatedAt,
 	)

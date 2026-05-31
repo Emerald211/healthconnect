@@ -27,4 +27,5 @@ var (
 	ErrEmailNotVerified = NewAppError("email_not_verified", "please verify your email first", 403)
 	ErrAlreadyVerified  = NewAppError("already_verified", "email is already verified", 400)
 	
+	
 )

@@ -13,6 +13,7 @@ type Payment struct {
 	PaystackReference  *string    `json:"paystack_reference"`
 	PaystackAccessCode *string    `json:"paystack_access_code"`
 	PaidAt             *time.Time `json:"paid_at"`
+	ExpiresAt          *time.Time `json:"expires_at"`
 	CreatedAt          time.Time  `json:"created_at"`
 	UpdatedAt          time.Time  `json:"updated_at"`
 }
@@ -36,4 +37,5 @@ var (
 	ErrPaymentNotFound = NewAppError("payment_not_found", "payment not found", 404)
 	ErrPaymentFailed   = NewAppError("payment_failed", "payment could not be processed", 402)
 	ErrInvalidWebhook  = NewAppError("invalid_webhook", "invalid webhook signature", 401)
+	ErrAlreadyPaid     = NewAppError("already_paid", "this appointment has already been paid for", 409)
 )

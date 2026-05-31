@@ -11,6 +11,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/Emerald211/healthconnect/internal/config"
 	"github.com/Emerald211/healthconnect/internal/domain"
@@ -48,6 +49,27 @@ func (s *PaymentService) InitializePayment(ctx context.Context, patientId string
 			"appointment_id", req.AppointmentID,
 		)
 		return domain.InitializePaymentResponse{}, domain.ErrNotYourAppointment
+	}
+
+	existingPayment, err := s.paymentRepo.GetByAppointmentID(ctx, appointment.ID)
+	if err != nil {
+		if existingPayment.Status == "successful" {
+			return domain.InitializePaymentResponse{}, domain.ErrAlreadyPaid
+		}
+
+		if existingPayment.Status == "pending" && existingPayment.ExpiresAt != nil {
+			if time.Now().Before(*existingPayment.ExpiresAt) && existingPayment.PaystackAccessCode != nil {
+				slog.Info("returning existing payment link",
+					"appointment_id", appointment.ID,
+					"expires_at", existingPayment.ExpiresAt,
+				)
+				return domain.InitializePaymentResponse{
+					AuthorizationURL: "https://checkout.paystack.com/" + *existingPayment.PaystackAccessCode,
+					Reference:        *existingPayment.PaystackReference,
+					Payment:          existingPayment,
+				}, nil
+			}
+		}
 	}
 
 	patient, _, err := s.patientRepo.FindByID(ctx, patientId)
@@ -196,6 +218,15 @@ func (s *PaymentService) HandleWebhook(ctx context.Context, body []byte, signatu
 		return fmt.Errorf("missing or invalid reference in webhook")
 	}
 
+	// Verify with Paystack directly
+	if err := s.verifyWithPaystack(ctx, reference); err != nil {
+		slog.Error("paystack verification failed",
+			"reference", reference,
+			"error", err,
+		)
+		return err
+	}
+
 	// confirm the payment from db with the refeerence which was originally saved during initialize payment and so if status is pending is when it would be updated to success
 	if err := s.paymentRepo.ConfirmPayment(ctx, reference); err != nil {
 		slog.Error("failed to confirm payment",
@@ -235,4 +266,152 @@ func (s *PaymentService) GetPaymentStatus(ctx context.Context, patientID, appoin
 	}
 
 	return payment, nil
+}
+
+func (s *PaymentService) verifyWithPaystack(ctx context.Context, reference string) error {
+	httpReq, err := http.NewRequestWithContext(
+		ctx,
+		"GET",
+		s.cfg.PaystackBaseURL+"/transaction/verify/"+reference,
+		nil,
+	)
+	if err != nil {
+		return fmt.Errorf("building verify request: %w", err)
+	}
+
+	httpReq.Header.Set("Authorization", "Bearer "+s.cfg.PaystackSecretKey)
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(httpReq)
+	if err != nil {
+		return fmt.Errorf("calling paystack verify: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("reading verify response: %w", err)
+	}
+
+	// Log the raw response so we can see exactly what Paystack returns
+	slog.Info("paystack verify raw response", "body", string(respBytes))
+
+	var paystackResp struct {
+		Status  bool   `json:"status"`
+		Message string `json:"message"`
+		Data    struct {
+			Status    string `json:"status"` // "success", "failed", "abandoned"
+			Reference string `json:"reference"`
+			Amount    int    `json:"amount"`
+			Currency  string `json:"currency"`
+		} `json:"data"`
+	}
+
+	if err := json.Unmarshal(respBytes, &paystackResp); err != nil {
+		return fmt.Errorf("parsing verify response: %w", err)
+	}
+
+	slog.Info("paystack verify parsed",
+		"status", paystackResp.Status,
+		"data_status", paystackResp.Data.Status,
+		"reference", reference,
+	)
+
+	if !paystackResp.Status {
+		return fmt.Errorf("paystack verify returned false: %s", paystackResp.Message)
+	}
+
+	if paystackResp.Data.Status != "success" {
+		slog.Warn("paystack verification failed",
+			"reference", reference,
+			"status", paystackResp.Data.Status,
+		)
+		return domain.ErrPaymentFailed
+	}
+
+	slog.Info("paystack verification successful", "reference", reference)
+	return nil
+}
+
+// RefundPayment refunds a payment via Paystack
+func (s *PaymentService) RefundPayment(ctx context.Context, appointmentID, doctorID string) error {
+	// Get appointment
+	appointment, err := s.appointmentRepo.GetByID(ctx, appointmentID)
+	if err != nil {
+		return err
+	}
+
+	if appointment.DoctorID != doctorID {
+		return domain.ErrNotYourAppointment
+	}
+
+	// Get payment
+	payment, err := s.paymentRepo.GetByAppointmentID(ctx, appointmentID)
+	if err != nil {
+		return fmt.Errorf("getting payment: %w", err)
+	}
+
+	if payment.Status != "successful" {
+		return domain.ErrPaymentNotFound
+	}
+
+	// Call Paystack refund API
+	refundBody := map[string]interface{}{
+		"transaction": *payment.PaystackReference,
+	}
+
+	bodyBytes, err := json.Marshal(refundBody)
+	if err != nil {
+		return fmt.Errorf("preparing refund request: %w", err)
+	}
+
+	httpReq, err := http.NewRequestWithContext(
+		ctx,
+		"POST",
+		s.cfg.PaystackBaseURL+"/refund",
+		bytes.NewBuffer(bodyBytes),
+	)
+	if err != nil {
+		return fmt.Errorf("building refund request: %w", err)
+	}
+
+	httpReq.Header.Set("Authorization", "Bearer "+s.cfg.PaystackSecretKey)
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(httpReq)
+	if err != nil {
+		return fmt.Errorf("calling paystack refund: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("reading refund response: %w", err)
+	}
+
+	var paystackResp struct {
+		Status  bool   `json:"status"`
+		Message string `json:"message"`
+	}
+
+	if err := json.Unmarshal(respBytes, &paystackResp); err != nil {
+		return fmt.Errorf("parsing refund response: %w", err)
+	}
+
+	if !paystackResp.Status {
+		slog.Error("paystack refund failed",
+			"appointment_id", appointmentID,
+			"message", paystackResp.Message,
+		)
+		return domain.ErrPaymentFailed
+	}
+
+	slog.Info("payment refunded",
+		"appointment_id", appointmentID,
+		"reference", *payment.PaystackReference,
+	)
+
+	return nil
 }
