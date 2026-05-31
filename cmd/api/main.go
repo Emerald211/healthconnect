@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"log"
+
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -17,6 +17,7 @@ import (
 	"github.com/Emerald211/healthconnect/internal/repository"
 	"github.com/Emerald211/healthconnect/internal/service"
 	"github.com/Emerald211/healthconnect/internal/store"
+	"github.com/Emerald211/healthconnect/pkg/logger"
 	"github.com/gin-gonic/gin"
 
 	_ "github.com/Emerald211/healthconnect/docs"
@@ -47,30 +48,35 @@ func main() {
 	// load config first
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("failed to load config: %v", err)
+		panic("failed to load config: " + err.Error())
 	}
+
+	// init logger
+	logger.Init(cfg.ServerEnv)
 
 	// connect to DB
 
 	pool, err := db.NewPool(cfg)
 
 	if err != nil {
-		log.Fatalf("failed to connect to db: %v", err)
+		slog.Error("failed to connect to database", "error", err)
+		os.Exit(1)
 	}
 
 	defer pool.Close()
 
-	fmt.Println("Database connected successfully")
+	slog.Info("Database connected successfully")
 
 	redisClient, err := db.NewRedisClient(cfg)
 
 	if err != nil {
-		log.Fatalf("failed to connect to redis: %v", err)
+		slog.Error("failed to connect to redis", "error", err)
+		os.Exit(1)
 	}
 
 	defer redisClient.Close()
 
-	fmt.Println("Redis connected successfully")
+	slog.Info("Redis connected successfully")
 
 	tokenStore := store.NewTokenStore(redisClient)
 	emailService := service.NewEmailService(cfg)
@@ -88,6 +94,11 @@ func main() {
 	appointmentService := service.NewAppointmentService(appointmentRepo, doctorRepo)
 	appointmentHandler := handler.NewAppointmentHandler(appointmentService)
 
+	// payment layers
+	paymentRepo := repository.NewPaymentRepository(pool)
+	paymentService := service.NewPaymentService(paymentRepo, appointmentRepo, patientRepo, cfg, emailService)
+	paymentHandler := handler.NewPaymentHandler(paymentService)
+
 	// if in production mode, set gin to release mode
 	if cfg.ServerEnv == "production" {
 		gin.SetMode(gin.ReleaseMode)
@@ -99,6 +110,7 @@ func main() {
 	// Middlewares
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
+	r.Use(middleware.GinLogger())
 	r.Use(middleware.SecurityHeaders())
 	r.Use(middleware.RequestSizeLimit(10 << 20))
 	r.Use(middleware.CORS(cfg.CORSAllowedOrigins))
@@ -190,7 +202,7 @@ func main() {
 			patientAppts.Use(middleware.RoleMiddleware("patient"))
 			{
 				patientAppts.POST("", appointmentHandler.BookAppointment)
-				patientAppts.GET("/my", appointmentHandler.GetMyAppointments)
+				patientAppts.GET("/my", appointmentHandler.GetPatientAppointments)
 			}
 
 			// Doctor only routes
@@ -199,10 +211,20 @@ func main() {
 			{
 				doctorAppts.POST("/availability", appointmentHandler.SetAvailability)
 				doctorAppts.POST("/slots/:doctor_id/generate", appointmentHandler.GenerateSlots)
-				doctorAppts.GET("/doctor/my", appointmentHandler.GetMyAppointments)
+				doctorAppts.GET("/doctor/my", appointmentHandler.GetDoctorAppointments)
 				doctorAppts.PATCH("/:id/status", appointmentHandler.UpdateAppointmentStatus)
 			}
 		}
+
+		payments := v1.Group("/payments")
+		payments.Use(middleware.AuthMiddleware(cfg))
+		payments.Use(middleware.RoleMiddleware("patient"))
+		{
+			payments.POST("/initialize", paymentHandler.InitiliazePayment)
+			payments.GET("/:appointment_id", paymentHandler.GetPaymentStatus)
+		}
+
+		v1.POST("/payments/webhook", paymentHandler.HandleWebhook)
 
 	}
 
@@ -218,10 +240,12 @@ func main() {
 	// Start server in go routine
 
 	go func() {
-		fmt.Printf("HealthConnect API running on :%s (env: %s)\n",
-			cfg.ServerPort, cfg.ServerEnv)
+		slog.Info("HealthConnect API starting",
+			"port", cfg.ServerPort,
+			"env", cfg.ServerEnv)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("server failed: %v", err)
+			slog.Error("server failed", "error", err)
+			os.Exit(1)
 		}
 
 	}()
@@ -232,15 +256,16 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	fmt.Println("Shutting down server")
+	slog.Info("Shutting down server")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
-		log.Fatalf("forced shutdown: %v", err)
+		slog.Error("forced shutdown", "error", err)
+		os.Exit(1)
 	}
 
-	fmt.Println("Server stopped cleanly")
+	slog.Info("Server stopped cleanly")
 
 }

@@ -45,20 +45,7 @@ type Appointment struct {
 	Slot    *AppointmentSlot `json:"slot,omitempty"`
 }
 
-// Payment tracks payment for an appointment
-type Payment struct {
-	ID                 string     `json:"id"`
-	AppointmentID      string     `json:"appointment_id"`
-	PatientID          string     `json:"patient_id"`
-	Amount             float64    `json:"amount"`
-	Currency           string     `json:"currency"`
-	Status             string     `json:"status"` // pending, successful, failed, refunded
-	PaystackReference  string     `json:"paystack_reference"`
-	PaystackAccessCode string     `json:"paystack_access_code"`
-	PaidAt             *time.Time `json:"paid_at"`
-	CreatedAt          time.Time  `json:"created_at"`
-	UpdatedAt          time.Time  `json:"updated_at"`
-}
+
 
 // --- Request DTOs ---
 

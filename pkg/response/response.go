@@ -1,7 +1,7 @@
 package response
 
 import (
-	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/Emerald211/healthconnect/internal/domain"
@@ -26,12 +26,11 @@ func Error(c *gin.Context, err error) {
 		return
 	}
 
-	fmt.Printf("ERROR: %v\n", err)
-
+	slog.Error("unexpected error", "error", err)
 
 	c.JSON(http.StatusInternalServerError, gin.H{
 		"success": false,
-		"error": "internal_error",
+		"error":   "internal_error",
 		"message": "something went wrong",
 	})
 }

@@ -29,6 +29,9 @@ type Config struct {
 	EmailFrom    string
 
 	CORSAllowedOrigins []string
+
+	PaystackSecretKey string
+	PaystackBaseURL   string
 }
 
 func Load() (*Config, error) {
@@ -62,6 +65,8 @@ func Load() (*Config, error) {
 		ResendAPIKey:       viper.GetString("RESEND_API_KEY"),
 		EmailFrom:          viper.GetString("EMAIL_FROM"),
 		CORSAllowedOrigins: strings.Split(viper.GetString("CORS_ALLOWED_ORIGINS"), ","),
+		PaystackSecretKey:  viper.GetString("PAYSTACK_SECRET_KEY"),
+		PaystackBaseURL:    viper.GetString("PAYSTACK_BASE_URL"),
 	}
 
 	if err := cfg.validate(); err != nil {

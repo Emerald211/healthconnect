@@ -19,12 +19,12 @@ func NewPatientHandler(service *service.PatientService) *PatientHandler {
 
 // Register godoc
 // @Summary      Register a new patient
-// @Description  Creates a new patient account and sends OTP to email
-// @Tags         patient-auth
+// @Description  Creates a new patient account and sends an OTP to their email for verification.
+// @Tags         Authentication (Patient)
 // @Accept       json
 // @Produce      json
-// @Param        request  body      domain.RegisterPatientDTO  true  "Patient registration data"
-// @Success      201      {object}  domain.AuthResponse
+// @Param        request  body      domain.RegisterPatientDTO  true  "Patient registration data."
+// @Success      201      {object}  domain.AuthResponse  "Created - Patient registered successfully."
 // @Failure      400      {object}  map[string]interface{}
 // @Failure      409      {object}  map[string]interface{}
 // @Router       /api/v1/auth/register [post]
@@ -53,11 +53,11 @@ func (h *PatientHandler) Register(c *gin.Context) {
 
 // Login godoc
 // @Summary      Login as a patient
-// @Description  Authenticates a patient and returns access + refresh tokens
-// @Tags         patient-auth
+// @Description  Authenticates a patient with their credentials and returns access and refresh tokens.
+// @Tags         Authentication (Patient)
 // @Accept       json
 // @Produce      json
-// @Param        request  body      domain.LoginDto  true  "Login credentials"
+// @Param        request  body      domain.LoginDto  true  "Patient login credentials."
 // @Success      200      {object}  domain.AuthResponse
 // @Failure      401      {object}  map[string]interface{}
 // @Failure      429      {object}  map[string]interface{}
@@ -86,12 +86,12 @@ func (h *PatientHandler) Login(c *gin.Context) {
 }
 
 // RefreshToken godoc
-// @Summary      Refresh access token
-// @Description  Issues a new access token using a valid refresh token
-// @Tags         patient-auth
+// @Summary      Refresh patient access token
+// @Description  Issues a new access token using a valid refresh token for patient.
+// @Tags         Authentication (Patient)
 // @Accept       json
 // @Produce      json
-// @Param        request  body      domain.RefreshTokenRequest  true  "Refresh token data"
+// @Param        request  body      domain.RefreshTokenRequest  true  "Refresh token data."
 // @Success      200      {object}  domain.AuthResponse
 // @Failure      401      {object}  map[string]interface{}
 // @Router       /api/v1/auth/refresh [post]
@@ -116,12 +116,12 @@ func (h *PatientHandler) RefreshToken(c *gin.Context) {
 }
 
 // VerifyEmail godoc
-// @Summary      Verify email with OTP
-// @Description  Verifies a patient's email using the OTP sent during registration
-// @Tags         patient-auth
+// @Summary      Verify patient email with OTP
+// @Description  Verifies a patient's email address using the OTP sent during registration or resend.
+// @Tags         Authentication (Patient)
 // @Accept       json
 // @Produce      json
-// @Param        request  body      domain.VerifyEmailRequest  true  "Email and OTP"
+// @Param        request  body      domain.VerifyEmailRequest  true  "Email and OTP for verification."
 // @Success      200      {object}  map[string]interface{}
 // @Failure      400      {object}  map[string]interface{}
 // @Router       /api/v1/auth/verify-email [post]
@@ -147,13 +147,14 @@ func (h *PatientHandler) VerifyEmail(c *gin.Context) {
 		"message": "email verified successfully",
 	})
 }
+
 // ResendOTP godoc
-// @Summary      Resend verification OTP
-// @Description  Resends the email verification OTP to the patient
-// @Tags         patient-auth
+// @Summary      Resend patient verification OTP
+// @Description  Resends the email verification OTP to the patient's email.
+// @Tags         Authentication (Patient)
 // @Accept       json
 // @Produce      json
-// @Param        request  body      domain.ResendOTPRequest  true  "Patient email"
+// @Param        request  body      domain.ResendOTPRequest  true  "Patient email to resend OTP to."
 // @Success      200      {object}  map[string]interface{}
 // @Failure      400      {object}  map[string]interface{}
 // @Router       /api/v1/auth/resend-otp [post]
@@ -178,13 +179,14 @@ func (h *PatientHandler) ResendOTP(c *gin.Context) {
 		"message": "otp resent successfully",
 	})
 }
+
 // ForgotPassword godoc
-// @Summary      Request password reset
-// @Description  Sends a password reset OTP to the patient's email
-// @Tags         patient-auth
+// @Summary      Request patient password reset
+// @Description  Sends a password reset OTP to the patient's registered email address.
+// @Tags         Authentication (Patient)
 // @Accept       json
 // @Produce      json
-// @Param        request  body      domain.ForgotPasswordRequest  true  "Patient email"
+// @Param        request  body      domain.ForgotPasswordRequest  true  "Patient email for password reset."
 // @Success      200      {object}  map[string]interface{}
 // @Router       /api/v1/auth/forgot-password [post]
 func (h *PatientHandler) ForgotPassword(c *gin.Context) {
@@ -206,13 +208,14 @@ func (h *PatientHandler) ForgotPassword(c *gin.Context) {
 		"message": "if your email is registered you will receive a reset code",
 	})
 }
+
 // ResetPassword godoc
-// @Summary      Reset password with OTP
-// @Description  Resets the patient's password using the OTP sent to their email
-// @Tags         patient-auth
+// @Summary      Reset patient password with OTP
+// @Description  Resets the patient's password using the OTP sent to their email.
+// @Tags         Authentication (Patient)
 // @Accept       json
 // @Produce      json
-// @Param        request  body      domain.ResetPasswordRequest  true  "Reset password data"
+// @Param        request  body      domain.ResetPasswordRequest  true  "Reset password data including email, OTP, and new password."
 // @Success      200      {object}  map[string]interface{}
 // @Failure      400      {object}  map[string]interface{}
 // @Router       /api/v1/auth/reset-password [post]
@@ -236,14 +239,15 @@ func (h *PatientHandler) ResetPassword(c *gin.Context) {
 		"message": "password reset successfully, please login",
 	})
 }
+
 // ChangePassword godoc
 // @Summary      Change password
-// @Description  Changes the authenticated patient's password
-// @Tags         patients
+// @Description  Changes the authenticated patient's password. Requires current and new passwords.
+// @Tags         Patients
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
-// @Param        request  body      domain.ChangePasswordRequest  true  "Change password data"
+// @Param        request  body      domain.ChangePasswordRequest  true  "Change password data."
 // @Success      200      {object}  map[string]interface{}
 // @Failure      401      {object}  map[string]interface{}
 // @Router       /api/v1/patients/change-password [post]
@@ -269,10 +273,11 @@ func (h *PatientHandler) ChangePassword(c *gin.Context) {
 		"message": "password changed successfully",
 	})
 }
+
 // Logout godoc
 // @Summary      Logout patient
-// @Description  Invalidates the patient's refresh token
-// @Tags         patients
+// @Description  Invalidates the patient's refresh token, effectively logging them out.
+// @Tags         Patients
 // @Produce      json
 // @Security     BearerAuth
 // @Success      200  {object}  map[string]interface{}
@@ -299,10 +304,11 @@ func (h *PatientHandler) Logout(c *gin.Context) {
 		"message": "logged out successfully",
 	})
 }
+
 // GetMe godoc
 // @Summary      Get current patient profile
-// @Description  Returns the authenticated patient's profile
-// @Tags         patients
+// @Description  Returns the authenticated patient's profile information.
+// @Tags         Patients
 // @Produce      json
 // @Security     BearerAuth
 // @Success      200  {object}  domain.Patient

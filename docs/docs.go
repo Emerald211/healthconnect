@@ -29,7 +29,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Patient books an appointment slot with a doctor",
+                "description": "Allows an authenticated patient to book an appointment slot with a doctor.",
                 "consumes": [
                     "application/json"
                 ],
@@ -37,12 +37,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "appointments"
+                    "Appointments"
                 ],
                 "summary": "Book an appointment",
                 "parameters": [
                     {
-                        "description": "Booking data",
+                        "description": "Booking data for the appointment.",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -75,7 +75,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Allows a doctor to set their weekly availability schedule",
+                "description": "Allows an authenticated doctor to set or update their weekly availability schedule.",
                 "consumes": [
                     "application/json"
                 ],
@@ -83,7 +83,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "appointments"
+                    "Appointments"
                 ],
                 "summary": "Set doctor availability",
                 "parameters": [
@@ -121,18 +121,18 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns a doctor's weekly availability schedule",
+                "description": "Returns a specific doctor's weekly availability schedule. Accessible by any authenticated user.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "appointments"
+                    "Appointments"
                 ],
                 "summary": "Get doctor availability",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Doctor ID",
+                        "description": "The ID of the doctor to retrieve availability for.",
                         "name": "doctor_id",
                         "in": "path",
                         "required": true
@@ -151,6 +151,34 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/appointments/doctor/my": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns all appointments for the currently authenticated doctor. This endpoint is similar to ` + "`" + `/api/v1/appointments/my` + "`" + ` but for doctors.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Appointments"
+                ],
+                "summary": "Get doctor's appointments",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/domain.Appointment"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/appointments/my": {
             "get": {
                 "security": [
@@ -158,12 +186,12 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns all appointments for the logged-in patient",
+                "description": "Returns all appointments for the currently authenticated patient.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "appointments"
+                    "Appointments"
                 ],
                 "summary": "Get patient appointments",
                 "responses": {
@@ -186,25 +214,25 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns all available (unbooked) slots for a doctor on a date",
+                "description": "Returns all available (unbooked) appointment slots for a specific doctor on a given date. Accessible by any authenticated user.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "appointments"
+                    "Appointments"
                 ],
-                "summary": "Get available slots",
+                "summary": "Get available appointment slots",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Doctor ID",
+                        "description": "The ID of the doctor to retrieve slots for.",
                         "name": "doctor_id",
                         "in": "path",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "Date (YYYY-MM-DD)",
+                        "description": "The date (YYYY-MM-DD) to check for available slots.",
                         "name": "date",
                         "in": "query",
                         "required": true
@@ -230,7 +258,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Generates bookable slots for a doctor on a specific date",
+                "description": "Allows an authenticated doctor to generate bookable appointment slots for a specific date based on their availability.",
                 "consumes": [
                     "application/json"
                 ],
@@ -238,20 +266,20 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "appointments"
+                    "Appointments"
                 ],
                 "summary": "Generate appointment slots",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Doctor ID",
+                        "description": "The ID of the doctor to generate slots for.",
                         "name": "doctor_id",
                         "in": "path",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "Date (YYYY-MM-DD)",
+                        "description": "The date (YYYY-MM-DD) to generate slots for.",
                         "name": "date",
                         "in": "query",
                         "required": true
@@ -277,7 +305,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Allows a doctor to update appointment status and add notes",
+                "description": "Allows an authenticated doctor to update the status of an appointment and add notes.",
                 "consumes": [
                     "application/json"
                 ],
@@ -285,19 +313,19 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "appointments"
+                    "Appointments"
                 ],
                 "summary": "Update appointment status",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Appointment ID",
+                        "description": "The ID of the appointment to update.",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Status update",
+                        "description": "Status update and optional doctor notes.",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -318,7 +346,7 @@ const docTemplate = `{
         },
         "/api/v1/auth/forgot-password": {
             "post": {
-                "description": "Sends a password reset OTP to the patient's email",
+                "description": "Sends a password reset OTP to the patient's registered email address.",
                 "consumes": [
                     "application/json"
                 ],
@@ -326,12 +354,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "patient-auth"
+                    "Authentication (Patient)"
                 ],
-                "summary": "Request password reset",
+                "summary": "Request patient password reset",
                 "parameters": [
                     {
-                        "description": "Patient email",
+                        "description": "Patient email for password reset.",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -353,7 +381,7 @@ const docTemplate = `{
         },
         "/api/v1/auth/login": {
             "post": {
-                "description": "Authenticates a patient and returns access + refresh tokens",
+                "description": "Authenticates a patient with their credentials and returns access and refresh tokens.",
                 "consumes": [
                     "application/json"
                 ],
@@ -361,12 +389,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "patient-auth"
+                    "Authentication (Patient)"
                 ],
                 "summary": "Login as a patient",
                 "parameters": [
                     {
-                        "description": "Login credentials",
+                        "description": "Patient login credentials.",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -401,7 +429,7 @@ const docTemplate = `{
         },
         "/api/v1/auth/refresh": {
             "post": {
-                "description": "Issues a new access token using a valid refresh token",
+                "description": "Issues a new access token using a valid refresh token for patient.",
                 "consumes": [
                     "application/json"
                 ],
@@ -409,12 +437,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "patient-auth"
+                    "Authentication (Patient)"
                 ],
-                "summary": "Refresh access token",
+                "summary": "Refresh patient access token",
                 "parameters": [
                     {
-                        "description": "Refresh token data",
+                        "description": "Refresh token data.",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -442,7 +470,7 @@ const docTemplate = `{
         },
         "/api/v1/auth/register": {
             "post": {
-                "description": "Creates a new patient account and sends OTP to email",
+                "description": "Creates a new patient account and sends an OTP to their email for verification.",
                 "consumes": [
                     "application/json"
                 ],
@@ -450,12 +478,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "patient-auth"
+                    "Authentication (Patient)"
                 ],
                 "summary": "Register a new patient",
                 "parameters": [
                     {
-                        "description": "Patient registration data",
+                        "description": "Patient registration data.",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -466,7 +494,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "201": {
-                        "description": "Created",
+                        "description": "Created - Patient registered successfully.",
                         "schema": {
                             "$ref": "#/definitions/domain.AuthResponse"
                         }
@@ -490,7 +518,7 @@ const docTemplate = `{
         },
         "/api/v1/auth/resend-otp": {
             "post": {
-                "description": "Resends the email verification OTP to the patient",
+                "description": "Resends the email verification OTP to the patient's email.",
                 "consumes": [
                     "application/json"
                 ],
@@ -498,12 +526,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "patient-auth"
+                    "Authentication (Patient)"
                 ],
-                "summary": "Resend verification OTP",
+                "summary": "Resend patient verification OTP",
                 "parameters": [
                     {
-                        "description": "Patient email",
+                        "description": "Patient email to resend OTP to.",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -532,7 +560,7 @@ const docTemplate = `{
         },
         "/api/v1/auth/reset-password": {
             "post": {
-                "description": "Resets the patient's password using the OTP sent to their email",
+                "description": "Resets the patient's password using the OTP sent to their email.",
                 "consumes": [
                     "application/json"
                 ],
@@ -540,12 +568,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "patient-auth"
+                    "Authentication (Patient)"
                 ],
-                "summary": "Reset password with OTP",
+                "summary": "Reset patient password with OTP",
                 "parameters": [
                     {
-                        "description": "Reset password data",
+                        "description": "Reset password data including email, OTP, and new password.",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -574,7 +602,7 @@ const docTemplate = `{
         },
         "/api/v1/auth/verify-email": {
             "post": {
-                "description": "Verifies a patient's email using the OTP sent during registration",
+                "description": "Verifies a patient's email address using the OTP sent during registration or resend.",
                 "consumes": [
                     "application/json"
                 ],
@@ -582,12 +610,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "patient-auth"
+                    "Authentication (Patient)"
                 ],
-                "summary": "Verify email with OTP",
+                "summary": "Verify patient email with OTP",
                 "parameters": [
                     {
-                        "description": "Email and OTP",
+                        "description": "Email and OTP for verification.",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -621,18 +649,18 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns all active doctors, optionally filtered by specialty",
+                "description": "Returns a list of all active doctors, with optional filtering by specialty.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "doctors"
+                    "Doctors"
                 ],
                 "summary": "List all doctors",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Filter by specialty",
+                        "description": "Filter doctors by their specialty.",
                         "name": "specialty",
                         "in": "query"
                     }
@@ -659,7 +687,7 @@ const docTemplate = `{
         },
         "/api/v1/doctors/auth/forgot-password": {
             "post": {
-                "description": "Sends a password reset OTP to the doctor's email",
+                "description": "Sends a password reset OTP to the doctor's registered email address.",
                 "consumes": [
                     "application/json"
                 ],
@@ -667,12 +695,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "doctor-auth"
+                    "Authentication (Doctor)"
                 ],
                 "summary": "Request doctor password reset",
                 "parameters": [
                     {
-                        "description": "Doctor email",
+                        "description": "Doctor email for password reset.",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -694,7 +722,7 @@ const docTemplate = `{
         },
         "/api/v1/doctors/auth/login": {
             "post": {
-                "description": "Authenticates a doctor and returns access + refresh tokens",
+                "description": "Authenticates a doctor with their credentials and returns access and refresh tokens.",
                 "consumes": [
                     "application/json"
                 ],
@@ -702,12 +730,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "doctor-auth"
+                    "Authentication (Doctor)"
                 ],
                 "summary": "Login as a doctor",
                 "parameters": [
                     {
-                        "description": "Login credentials",
+                        "description": "Doctor login credentials.",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -735,7 +763,7 @@ const docTemplate = `{
         },
         "/api/v1/doctors/auth/refresh": {
             "post": {
-                "description": "Issues a new access token using a valid refresh token",
+                "description": "Issues a new access token using a valid refresh token for doctor.",
                 "consumes": [
                     "application/json"
                 ],
@@ -743,12 +771,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "doctor-auth"
+                    "Authentication (Doctor)"
                 ],
                 "summary": "Refresh doctor access token",
                 "parameters": [
                     {
-                        "description": "Refresh token data",
+                        "description": "Refresh token data.",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -776,7 +804,7 @@ const docTemplate = `{
         },
         "/api/v1/doctors/auth/register": {
             "post": {
-                "description": "Creates a new doctor account and sends OTP to email",
+                "description": "Creates a new doctor account and sends an OTP to their email for verification.",
                 "consumes": [
                     "application/json"
                 ],
@@ -784,12 +812,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "doctor-auth"
+                    "Authentication (Doctor)"
                 ],
                 "summary": "Register a new doctor",
                 "parameters": [
                     {
-                        "description": "Doctor registration data",
+                        "description": "Doctor registration data.",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -824,7 +852,7 @@ const docTemplate = `{
         },
         "/api/v1/doctors/auth/resend-otp": {
             "post": {
-                "description": "Resends the email verification OTP to the doctor",
+                "description": "Resends the email verification OTP to the doctor's email.",
                 "consumes": [
                     "application/json"
                 ],
@@ -832,12 +860,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "doctor-auth"
+                    "Authentication (Doctor)"
                 ],
                 "summary": "Resend doctor verification OTP",
                 "parameters": [
                     {
-                        "description": "Doctor email",
+                        "description": "Doctor email to resend OTP to.",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -853,13 +881,20 @@ const docTemplate = `{
                             "type": "object",
                             "additionalProperties": true
                         }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
                     }
                 }
             }
         },
         "/api/v1/doctors/auth/reset-password": {
             "post": {
-                "description": "Resets the doctor's password using the OTP sent to their email",
+                "description": "Resets the doctor's password using the OTP sent to their email.",
                 "consumes": [
                     "application/json"
                 ],
@@ -867,12 +902,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "doctor-auth"
+                    "Authentication (Doctor)"
                 ],
                 "summary": "Reset doctor password with OTP",
                 "parameters": [
                     {
-                        "description": "Reset password data",
+                        "description": "Reset password data including email, OTP, and new password.",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -901,7 +936,7 @@ const docTemplate = `{
         },
         "/api/v1/doctors/auth/verify-email": {
             "post": {
-                "description": "Verifies a doctor's email using the OTP sent during registration",
+                "description": "Verifies a doctor's email address using the OTP sent during registration or resend.",
                 "consumes": [
                     "application/json"
                 ],
@@ -909,12 +944,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "doctor-auth"
+                    "Authentication (Doctor)"
                 ],
                 "summary": "Verify doctor email with OTP",
                 "parameters": [
                     {
-                        "description": "Email and OTP",
+                        "description": "Email and OTP for verification.",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -948,7 +983,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Changes the authenticated doctor's password",
+                "description": "Changes the authenticated doctor's password. Requires current and new passwords.",
                 "consumes": [
                     "application/json"
                 ],
@@ -956,12 +991,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "doctors"
+                    "Doctors"
                 ],
                 "summary": "Change doctor password",
                 "parameters": [
                     {
-                        "description": "Change password data",
+                        "description": "Change password data.",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -995,12 +1030,12 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Invalidates the doctor's refresh token",
+                "description": "Invalidates the doctor's refresh token, effectively logging them out.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "doctors"
+                    "Doctors"
                 ],
                 "summary": "Logout doctor",
                 "responses": {
@@ -1028,12 +1063,12 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns the authenticated doctor's profile",
+                "description": "Returns the authenticated doctor's profile information.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "doctors"
+                    "Doctors"
                 ],
                 "summary": "Get current doctor profile",
                 "responses": {
@@ -1060,7 +1095,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Changes the authenticated patient's password",
+                "description": "Changes the authenticated patient's password. Requires current and new passwords.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1068,12 +1103,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "patients"
+                    "Patients"
                 ],
                 "summary": "Change password",
                 "parameters": [
                     {
-                        "description": "Change password data",
+                        "description": "Change password data.",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -1107,12 +1142,12 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Invalidates the patient's refresh token",
+                "description": "Invalidates the patient's refresh token, effectively logging them out.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "patients"
+                    "Patients"
                 ],
                 "summary": "Logout patient",
                 "responses": {
@@ -1140,12 +1175,12 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns the authenticated patient's profile",
+                "description": "Returns the authenticated patient's profile information.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "patients"
+                    "Patients"
                 ],
                 "summary": "Get current patient profile",
                 "responses": {
@@ -1157,6 +1192,124 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/payments/initialize": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a Paystack payment link for the patient to pay",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "payments"
+                ],
+                "summary": "Initialize payment for an appointment",
+                "parameters": [
+                    {
+                        "description": "Payment data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.InitializePaymentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.InitializePaymentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/payments/webhook": {
+            "post": {
+                "description": "Receives and processes payment notifications from Paystack",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "payments"
+                ],
+                "summary": "Paystack webhook",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/payments/{appointment_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the payment status for an appointment",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "payments"
+                ],
+                "summary": "Get payment status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Appointment ID",
+                        "name": "appointment_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.Payment"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1409,6 +1562,31 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.InitializePaymentRequest": {
+            "type": "object",
+            "required": [
+                "appointment_id"
+            ],
+            "properties": {
+                "appointment_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.InitializePaymentResponse": {
+            "type": "object",
+            "properties": {
+                "authorization_url": {
+                    "type": "string"
+                },
+                "payment": {
+                    "$ref": "#/definitions/domain.Payment"
+                },
+                "reference": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.LoginDto": {
             "type": "object",
             "required": [
@@ -1456,6 +1634,45 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "phone": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.Payment": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "appointment_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "paid_at": {
+                    "type": "string"
+                },
+                "patient_id": {
+                    "type": "string"
+                },
+                "paystack_access_code": {
+                    "type": "string"
+                },
+                "paystack_reference": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "pending, successful, failed, refunded",
                     "type": "string"
                 },
                 "updated_at": {

@@ -161,6 +161,22 @@ definitions:
     required:
     - email
     type: object
+  domain.InitializePaymentRequest:
+    properties:
+      appointment_id:
+        type: string
+    required:
+    - appointment_id
+    type: object
+  domain.InitializePaymentResponse:
+    properties:
+      authorization_url:
+        type: string
+      payment:
+        $ref: '#/definitions/domain.Payment'
+      reference:
+        type: string
+    type: object
   domain.LoginDto:
     properties:
       email:
@@ -193,6 +209,32 @@ definitions:
       name:
         type: string
       phone:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  domain.Payment:
+    properties:
+      amount:
+        type: number
+      appointment_id:
+        type: string
+      created_at:
+        type: string
+      currency:
+        type: string
+      id:
+        type: string
+      paid_at:
+        type: string
+      patient_id:
+        type: string
+      paystack_access_code:
+        type: string
+      paystack_reference:
+        type: string
+      status:
+        description: pending, successful, failed, refunded
         type: string
       updated_at:
         type: string
@@ -360,9 +402,10 @@ paths:
     post:
       consumes:
       - application/json
-      description: Patient books an appointment slot with a doctor
+      description: Allows an authenticated patient to book an appointment slot with
+        a doctor.
       parameters:
-      - description: Booking data
+      - description: Booking data for the appointment.
         in: body
         name: request
         required: true
@@ -384,19 +427,20 @@ paths:
       - BearerAuth: []
       summary: Book an appointment
       tags:
-      - appointments
+      - Appointments
   /api/v1/appointments/{id}/status:
     patch:
       consumes:
       - application/json
-      description: Allows a doctor to update appointment status and add notes
+      description: Allows an authenticated doctor to update the status of an appointment
+        and add notes.
       parameters:
-      - description: Appointment ID
+      - description: The ID of the appointment to update.
         in: path
         name: id
         required: true
         type: string
-      - description: Status update
+      - description: Status update and optional doctor notes.
         in: body
         name: request
         required: true
@@ -413,12 +457,13 @@ paths:
       - BearerAuth: []
       summary: Update appointment status
       tags:
-      - appointments
+      - Appointments
   /api/v1/appointments/availability:
     post:
       consumes:
       - application/json
-      description: Allows a doctor to set their weekly availability schedule
+      description: Allows an authenticated doctor to set or update their weekly availability
+        schedule.
       parameters:
       - description: Availability data
         in: body
@@ -442,12 +487,13 @@ paths:
       - BearerAuth: []
       summary: Set doctor availability
       tags:
-      - appointments
+      - Appointments
   /api/v1/appointments/availability/{doctor_id}:
     get:
-      description: Returns a doctor's weekly availability schedule
+      description: Returns a specific doctor's weekly availability schedule. Accessible
+        by any authenticated user.
       parameters:
-      - description: Doctor ID
+      - description: The ID of the doctor to retrieve availability for.
         in: path
         name: doctor_id
         required: true
@@ -465,10 +511,28 @@ paths:
       - BearerAuth: []
       summary: Get doctor availability
       tags:
-      - appointments
+      - Appointments
+  /api/v1/appointments/doctor/my:
+    get:
+      description: Returns all appointments for the currently authenticated doctor.
+        This endpoint is similar to `/api/v1/appointments/my` but for doctors.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Appointment'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get doctor's appointments
+      tags:
+      - Appointments
   /api/v1/appointments/my:
     get:
-      description: Returns all appointments for the logged-in patient
+      description: Returns all appointments for the currently authenticated patient.
       produces:
       - application/json
       responses:
@@ -482,17 +546,18 @@ paths:
       - BearerAuth: []
       summary: Get patient appointments
       tags:
-      - appointments
+      - Appointments
   /api/v1/appointments/slots/{doctor_id}:
     get:
-      description: Returns all available (unbooked) slots for a doctor on a date
+      description: Returns all available (unbooked) appointment slots for a specific
+        doctor on a given date. Accessible by any authenticated user.
       parameters:
-      - description: Doctor ID
+      - description: The ID of the doctor to retrieve slots for.
         in: path
         name: doctor_id
         required: true
         type: string
-      - description: Date (YYYY-MM-DD)
+      - description: The date (YYYY-MM-DD) to check for available slots.
         in: query
         name: date
         required: true
@@ -508,21 +573,22 @@ paths:
             type: array
       security:
       - BearerAuth: []
-      summary: Get available slots
+      summary: Get available appointment slots
       tags:
-      - appointments
+      - Appointments
   /api/v1/appointments/slots/{doctor_id}/generate:
     post:
       consumes:
       - application/json
-      description: Generates bookable slots for a doctor on a specific date
+      description: Allows an authenticated doctor to generate bookable appointment
+        slots for a specific date based on their availability.
       parameters:
-      - description: Doctor ID
+      - description: The ID of the doctor to generate slots for.
         in: path
         name: doctor_id
         required: true
         type: string
-      - description: Date (YYYY-MM-DD)
+      - description: The date (YYYY-MM-DD) to generate slots for.
         in: query
         name: date
         required: true
@@ -540,14 +606,14 @@ paths:
       - BearerAuth: []
       summary: Generate appointment slots
       tags:
-      - appointments
+      - Appointments
   /api/v1/auth/forgot-password:
     post:
       consumes:
       - application/json
-      description: Sends a password reset OTP to the patient's email
+      description: Sends a password reset OTP to the patient's registered email address.
       parameters:
-      - description: Patient email
+      - description: Patient email for password reset.
         in: body
         name: request
         required: true
@@ -561,16 +627,17 @@ paths:
           schema:
             additionalProperties: true
             type: object
-      summary: Request password reset
+      summary: Request patient password reset
       tags:
-      - patient-auth
+      - Authentication (Patient)
   /api/v1/auth/login:
     post:
       consumes:
       - application/json
-      description: Authenticates a patient and returns access + refresh tokens
+      description: Authenticates a patient with their credentials and returns access
+        and refresh tokens.
       parameters:
-      - description: Login credentials
+      - description: Patient login credentials.
         in: body
         name: request
         required: true
@@ -595,14 +662,14 @@ paths:
             type: object
       summary: Login as a patient
       tags:
-      - patient-auth
+      - Authentication (Patient)
   /api/v1/auth/refresh:
     post:
       consumes:
       - application/json
-      description: Issues a new access token using a valid refresh token
+      description: Issues a new access token using a valid refresh token for patient.
       parameters:
-      - description: Refresh token data
+      - description: Refresh token data.
         in: body
         name: request
         required: true
@@ -620,16 +687,17 @@ paths:
           schema:
             additionalProperties: true
             type: object
-      summary: Refresh access token
+      summary: Refresh patient access token
       tags:
-      - patient-auth
+      - Authentication (Patient)
   /api/v1/auth/register:
     post:
       consumes:
       - application/json
-      description: Creates a new patient account and sends OTP to email
+      description: Creates a new patient account and sends an OTP to their email for
+        verification.
       parameters:
-      - description: Patient registration data
+      - description: Patient registration data.
         in: body
         name: request
         required: true
@@ -639,7 +707,7 @@ paths:
       - application/json
       responses:
         "201":
-          description: Created
+          description: Created - Patient registered successfully.
           schema:
             $ref: '#/definitions/domain.AuthResponse'
         "400":
@@ -654,14 +722,14 @@ paths:
             type: object
       summary: Register a new patient
       tags:
-      - patient-auth
+      - Authentication (Patient)
   /api/v1/auth/resend-otp:
     post:
       consumes:
       - application/json
-      description: Resends the email verification OTP to the patient
+      description: Resends the email verification OTP to the patient's email.
       parameters:
-      - description: Patient email
+      - description: Patient email to resend OTP to.
         in: body
         name: request
         required: true
@@ -680,16 +748,16 @@ paths:
           schema:
             additionalProperties: true
             type: object
-      summary: Resend verification OTP
+      summary: Resend patient verification OTP
       tags:
-      - patient-auth
+      - Authentication (Patient)
   /api/v1/auth/reset-password:
     post:
       consumes:
       - application/json
-      description: Resets the patient's password using the OTP sent to their email
+      description: Resets the patient's password using the OTP sent to their email.
       parameters:
-      - description: Reset password data
+      - description: Reset password data including email, OTP, and new password.
         in: body
         name: request
         required: true
@@ -708,16 +776,17 @@ paths:
           schema:
             additionalProperties: true
             type: object
-      summary: Reset password with OTP
+      summary: Reset patient password with OTP
       tags:
-      - patient-auth
+      - Authentication (Patient)
   /api/v1/auth/verify-email:
     post:
       consumes:
       - application/json
-      description: Verifies a patient's email using the OTP sent during registration
+      description: Verifies a patient's email address using the OTP sent during registration
+        or resend.
       parameters:
-      - description: Email and OTP
+      - description: Email and OTP for verification.
         in: body
         name: request
         required: true
@@ -736,14 +805,15 @@ paths:
           schema:
             additionalProperties: true
             type: object
-      summary: Verify email with OTP
+      summary: Verify patient email with OTP
       tags:
-      - patient-auth
+      - Authentication (Patient)
   /api/v1/doctors:
     get:
-      description: Returns all active doctors, optionally filtered by specialty
+      description: Returns a list of all active doctors, with optional filtering by
+        specialty.
       parameters:
-      - description: Filter by specialty
+      - description: Filter doctors by their specialty.
         in: query
         name: specialty
         type: string
@@ -765,14 +835,14 @@ paths:
       - BearerAuth: []
       summary: List all doctors
       tags:
-      - doctors
+      - Doctors
   /api/v1/doctors/auth/forgot-password:
     post:
       consumes:
       - application/json
-      description: Sends a password reset OTP to the doctor's email
+      description: Sends a password reset OTP to the doctor's registered email address.
       parameters:
-      - description: Doctor email
+      - description: Doctor email for password reset.
         in: body
         name: request
         required: true
@@ -788,14 +858,15 @@ paths:
             type: object
       summary: Request doctor password reset
       tags:
-      - doctor-auth
+      - Authentication (Doctor)
   /api/v1/doctors/auth/login:
     post:
       consumes:
       - application/json
-      description: Authenticates a doctor and returns access + refresh tokens
+      description: Authenticates a doctor with their credentials and returns access
+        and refresh tokens.
       parameters:
-      - description: Login credentials
+      - description: Doctor login credentials.
         in: body
         name: request
         required: true
@@ -815,14 +886,14 @@ paths:
             type: object
       summary: Login as a doctor
       tags:
-      - doctor-auth
+      - Authentication (Doctor)
   /api/v1/doctors/auth/refresh:
     post:
       consumes:
       - application/json
-      description: Issues a new access token using a valid refresh token
+      description: Issues a new access token using a valid refresh token for doctor.
       parameters:
-      - description: Refresh token data
+      - description: Refresh token data.
         in: body
         name: request
         required: true
@@ -842,14 +913,15 @@ paths:
             type: object
       summary: Refresh doctor access token
       tags:
-      - doctor-auth
+      - Authentication (Doctor)
   /api/v1/doctors/auth/register:
     post:
       consumes:
       - application/json
-      description: Creates a new doctor account and sends OTP to email
+      description: Creates a new doctor account and sends an OTP to their email for
+        verification.
       parameters:
-      - description: Doctor registration data
+      - description: Doctor registration data.
         in: body
         name: request
         required: true
@@ -874,14 +946,14 @@ paths:
             type: object
       summary: Register a new doctor
       tags:
-      - doctor-auth
+      - Authentication (Doctor)
   /api/v1/doctors/auth/resend-otp:
     post:
       consumes:
       - application/json
-      description: Resends the email verification OTP to the doctor
+      description: Resends the email verification OTP to the doctor's email.
       parameters:
-      - description: Doctor email
+      - description: Doctor email to resend OTP to.
         in: body
         name: request
         required: true
@@ -895,16 +967,21 @@ paths:
           schema:
             additionalProperties: true
             type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
       summary: Resend doctor verification OTP
       tags:
-      - doctor-auth
+      - Authentication (Doctor)
   /api/v1/doctors/auth/reset-password:
     post:
       consumes:
       - application/json
-      description: Resets the doctor's password using the OTP sent to their email
+      description: Resets the doctor's password using the OTP sent to their email.
       parameters:
-      - description: Reset password data
+      - description: Reset password data including email, OTP, and new password.
         in: body
         name: request
         required: true
@@ -925,14 +1002,15 @@ paths:
             type: object
       summary: Reset doctor password with OTP
       tags:
-      - doctor-auth
+      - Authentication (Doctor)
   /api/v1/doctors/auth/verify-email:
     post:
       consumes:
       - application/json
-      description: Verifies a doctor's email using the OTP sent during registration
+      description: Verifies a doctor's email address using the OTP sent during registration
+        or resend.
       parameters:
-      - description: Email and OTP
+      - description: Email and OTP for verification.
         in: body
         name: request
         required: true
@@ -953,14 +1031,15 @@ paths:
             type: object
       summary: Verify doctor email with OTP
       tags:
-      - doctor-auth
+      - Authentication (Doctor)
   /api/v1/doctors/change-password:
     post:
       consumes:
       - application/json
-      description: Changes the authenticated doctor's password
+      description: Changes the authenticated doctor's password. Requires current and
+        new passwords.
       parameters:
-      - description: Change password data
+      - description: Change password data.
         in: body
         name: request
         required: true
@@ -983,10 +1062,11 @@ paths:
       - BearerAuth: []
       summary: Change doctor password
       tags:
-      - doctors
+      - Doctors
   /api/v1/doctors/logout:
     post:
-      description: Invalidates the doctor's refresh token
+      description: Invalidates the doctor's refresh token, effectively logging them
+        out.
       produces:
       - application/json
       responses:
@@ -1004,10 +1084,10 @@ paths:
       - BearerAuth: []
       summary: Logout doctor
       tags:
-      - doctors
+      - Doctors
   /api/v1/doctors/me:
     get:
-      description: Returns the authenticated doctor's profile
+      description: Returns the authenticated doctor's profile information.
       produces:
       - application/json
       responses:
@@ -1024,14 +1104,15 @@ paths:
       - BearerAuth: []
       summary: Get current doctor profile
       tags:
-      - doctors
+      - Doctors
   /api/v1/patients/change-password:
     post:
       consumes:
       - application/json
-      description: Changes the authenticated patient's password
+      description: Changes the authenticated patient's password. Requires current
+        and new passwords.
       parameters:
-      - description: Change password data
+      - description: Change password data.
         in: body
         name: request
         required: true
@@ -1054,10 +1135,11 @@ paths:
       - BearerAuth: []
       summary: Change password
       tags:
-      - patients
+      - Patients
   /api/v1/patients/logout:
     post:
-      description: Invalidates the patient's refresh token
+      description: Invalidates the patient's refresh token, effectively logging them
+        out.
       produces:
       - application/json
       responses:
@@ -1075,10 +1157,10 @@ paths:
       - BearerAuth: []
       summary: Logout patient
       tags:
-      - patients
+      - Patients
   /api/v1/patients/me:
     get:
-      description: Returns the authenticated patient's profile
+      description: Returns the authenticated patient's profile information.
       produces:
       - application/json
       responses:
@@ -1095,7 +1177,83 @@ paths:
       - BearerAuth: []
       summary: Get current patient profile
       tags:
-      - patients
+      - Patients
+  /api/v1/payments/{appointment_id}:
+    get:
+      description: Returns the payment status for an appointment
+      parameters:
+      - description: Appointment ID
+        in: path
+        name: appointment_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Payment'
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get payment status
+      tags:
+      - payments
+  /api/v1/payments/initialize:
+    post:
+      consumes:
+      - application/json
+      description: Creates a Paystack payment link for the patient to pay
+      parameters:
+      - description: Payment data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.InitializePaymentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.InitializePaymentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Initialize payment for an appointment
+      tags:
+      - payments
+  /api/v1/payments/webhook:
+    post:
+      consumes:
+      - application/json
+      description: Receives and processes payment notifications from Paystack
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Paystack webhook
+      tags:
+      - payments
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer" followed by a space and your JWT token
